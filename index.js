@@ -57,7 +57,30 @@ const ANTI_QUICK_MSGS = [
 const spamMap = new Map();
 const warnMap = new Map();
 const groupSettings = new Map();
-const viewOnceStore = new Map(); // stocker les view once reçus
+const viewOnceStore = new Map();
+
+// ── ÉCONOMIE
+const coinsData = new Map();
+const xpData = new Map();
+const dailyCooldown = new Map();
+const workCooldown = new Map();
+
+// ── STATS GROUPE
+const groupMsgStats = new Map();
+
+// ── JEUX
+const quizSessions = new Map();
+const penduSessions = new Map();
+
+// ── HELPERS ÉCONOMIE
+const getCoins = (jid) => coinsData.get(jid) || 0;
+const addCoins = (jid, amount) => coinsData.set(jid, Math.max(0, getCoins(jid) + amount));
+const getLevel = (jid) => {
+    const xp = xpData.get(jid) || 0;
+    const level = Math.floor(xp / 100) + 1;
+    return { level, xp };
+};
+const addXP = (jid, amount) => xpData.set(jid, (xpData.get(jid) || 0) + amount);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //   UTILITAIRES
@@ -201,7 +224,30 @@ const commands = {
             `▸ ${p}tts\n` +
             `▸ ${p}calc\n` +
             `▸ ${p}météo\n` +
-            `▸ ${p}profil\n\n` +
+            `▸ ${p}profil\n` +
+            `▸ ${p}pp\n\n` +
+            `*🎮 JEUX*\n` +
+            `▸ ${p}quiz\n` +
+            `▸ ${p}pendu\n` +
+            `▸ ${p}lettre\n` +
+            `▸ ${p}devinette\n` +
+            `▸ ${p}ship\n` +
+            `▸ ${p}hug\n` +
+            `▸ ${p}slap\n` +
+            `▸ ${p}fight\n` +
+            `▸ ${p}meme\n\n` +
+            `*📊 STATS*\n` +
+            `▸ ${p}stats\n` +
+            `▸ ${p}top\n` +
+            `▸ ${p}monscore\n\n` +
+            `*💰 ÉCONOMIE*\n` +
+            `▸ ${p}solde\n` +
+            `▸ ${p}daily\n` +
+            `▸ ${p}work\n` +
+            `▸ ${p}pari\n` +
+            `▸ ${p}transfert\n` +
+            `▸ ${p}rob\n` +
+            `▸ ${p}richesse\n\n` +
             `_O-TECH © 2026 — Innovation constante_ 🚀`;
 
         await sendImg(sock, from, ANON_IMG, menuText, msg);
@@ -632,6 +678,403 @@ const commands = {
     sticker: async (sock, from, msg) => {
         await reply(sock, from, "🎨 Sticker — installe *sharp* et *fluent-ffmpeg* pour activer.", msg);
     },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   🎮 JEUX
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    quiz: async (sock, from, msg, args, sender) => {
+        const questions = [
+            { q: "Quelle est la capitale d'Haïti?", r: "port-au-prince", a: "Port-au-Prince" },
+            { q: "Combien de couleurs dans le drapeau haïtien?", r: "2", a: "2 (bleu et rouge)" },
+            { q: "En quelle année Haïti a obtenu son indépendance?", r: "1804", a: "1804" },
+            { q: "Quelle est la monnaie d'Haïti?", r: "gourde", a: "La Gourde (HTG)" },
+            { q: "Quel est le plus grand pays du monde?", r: "russie", a: "La Russie" },
+            { q: "Combien de continents y a-t-il?", r: "7", a: "7 continents" },
+            { q: "Quelle est la planète la plus proche du soleil?", r: "mercure", a: "Mercure" },
+            { q: "Combien font 15 x 15?", r: "225", a: "225" },
+            { q: "Qui a inventé l'ampoule électrique?", r: "edison", a: "Thomas Edison" },
+            { q: "Quelle est la langue officielle du Brésil?", r: "portugais", a: "Le Portugais" },
+            { q: "Quel animal est le plus grand du monde?", r: "baleine bleue", a: "La Baleine bleue" },
+            { q: "En quelle année a débuté la 2ème Guerre Mondiale?", r: "1939", a: "1939" },
+            { q: "Combien d'os a le corps humain adulte?", r: "206", a: "206 os" },
+            { q: "Quelle est la capitale de la France?", r: "paris", a: "Paris" },
+            { q: "Quel est le symbole chimique de l'or?", r: "au", a: "Au" },
+        ];
+        const q = randomChoice(questions);
+        const key = `quiz_${from}_${sender}`;
+        quizSessions.set(key, { answer: q.r, correct: q.a, time: Date.now() });
+        setTimeout(() => quizSessions.delete(key), 30000);
+        await reply(sock, from,
+            `🎯 *QUIZ O-TECH*\n\n❓ ${q.q}\n\n_Tu as 30 secondes! Réponds directement._`, msg);
+    },
+
+    pendu: async (sock, from, msg, args, sender) => {
+        const mots = [
+            "HAITI", "TECHNOLOGIE", "INNOVATION", "WHATSAPP", "ORDINATEUR",
+            "INTERNET", "PROGRAMME", "ROBOT", "INTELLIGENCE", "DIGITAL",
+            "ANDROID", "TERMUX", "BAILEYS", "JAVASCRIPT", "OTECH",
+        ];
+        const mot = randomChoice(mots);
+        const key = `pendu_${from}`;
+        penduSessions.set(key, {
+            mot, trouve: Array(mot.length).fill("_"),
+            lettresEssayees: [], erreurs: 0, maxErreurs: 6,
+            joueur: sender
+        });
+        const session = penduSessions.get(key);
+        await reply(sock, from,
+            `🎮 *JEU DU PENDU*\n\n` +
+            `Mot: *${session.trouve.join(" ")}*\n` +
+            `Lettres: ${session.mot.length}\n\n` +
+            `_Tape .lettre X pour proposer une lettre_\n` +
+            `_Erreurs: 0/${session.maxErreurs}_`, msg);
+    },
+
+    lettre: async (sock, from, msg, args, sender) => {
+        const key = `pendu_${from}`;
+        const session = penduSessions.get(key);
+        if (!session) return reply(sock, from, "❌ Pas de partie en cours. Tape .pendu", msg);
+        const lettre = args[0]?.toUpperCase();
+        if (!lettre || lettre.length !== 1) return reply(sock, from, "❌ Usage: .lettre A", msg);
+        if (session.lettresEssayees.includes(lettre))
+            return reply(sock, from, `⚠️ Lettre *${lettre}* déjà essayée!`, msg);
+
+        session.lettresEssayees.push(lettre);
+        if (session.mot.includes(lettre)) {
+            for (let i = 0; i < session.mot.length; i++) {
+                if (session.mot[i] === lettre) session.trouve[i] = lettre;
+            }
+        } else {
+            session.erreurs++;
+        }
+
+        const penduArt = ["😊", "😐", "😟", "😨", "😰", "😱", "💀"];
+        const gagne = !session.trouve.includes("_");
+        const perdu = session.erreurs >= session.maxErreurs;
+
+        if (gagne) {
+            penduSessions.delete(key);
+            const gains = session.mot.length * 10;
+            addCoins(sender, gains);
+            return reply(sock, from,
+                `🎉 *GAGNÉ!*\n\nMot: *${session.mot}*\n💰 +${gains} coins gagnés!`, msg);
+        }
+        if (perdu) {
+            penduSessions.delete(key);
+            return reply(sock, from,
+                `💀 *PERDU!*\n\nLe mot était: *${session.mot}*\n\n_Tape .pendu pour rejouer_`, msg);
+        }
+
+        await reply(sock, from,
+            `${penduArt[session.erreurs]} *PENDU*\n\n` +
+            `Mot: *${session.trouve.join(" ")}*\n` +
+            `Lettres essayées: ${session.lettresEssayees.join(", ")}\n` +
+            `Erreurs: ${session.erreurs}/${session.maxErreurs}`, msg);
+    },
+
+    devinette: async (sock, from, msg, args, sender) => {
+        const devinettes = [
+            { q: "Je parle sans bouche, j'entends sans oreilles. Qu'est-ce que c'est?", r: "echo", a: "L'écho" },
+            { q: "Plus je sèche, plus je suis mouillée. Qu'est-ce que c'est?", r: "serviette", a: "Une serviette" },
+            { q: "J'ai des dents mais je ne mords pas. Qu'est-ce que c'est?", r: "peigne", a: "Un peigne" },
+            { q: "Je vole sans ailes, je pleure sans yeux. Qu'est-ce que c'est?", r: "nuage", a: "Un nuage" },
+            { q: "Plus on m'enlève, plus je grandis. Qu'est-ce que c'est?", r: "trou", a: "Un trou" },
+            { q: "Tout le monde me passe dessus mais personne ne m'écrase. Qu'est-ce?", r: "route", a: "La route" },
+        ];
+        const d = randomChoice(devinettes);
+        const key = `devinette_${from}_${sender}`;
+        quizSessions.set(key, { answer: d.r, correct: d.a, time: Date.now() });
+        setTimeout(() => quizSessions.delete(key), 45000);
+        await reply(sock, from,
+            `🧩 *DEVINETTE O-TECH*\n\n${d.q}\n\n_45 secondes pour répondre!_`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   📊 STATS GROUPE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    stats: async (sock, from, msg, args, sender) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta = await sock.groupMetadata(from);
+        const admins = meta.participants.filter(p => p.admin).length;
+        const total = meta.participants.length;
+        const groupStats = groupMsgStats.get(from) || {};
+        const totalMsgs = Object.values(groupStats).reduce((a, b) => a + b, 0);
+        await reply(sock, from,
+            `📊 *Stats du Groupe*\n\n` +
+            `🏢 *${meta.subject}*\n` +
+            `👥 Membres: *${total}*\n` +
+            `👮 Admins: *${admins}*\n` +
+            `💬 Messages enregistrés: *${totalMsgs}*\n` +
+            `🎯 Membres actifs: *${Object.keys(groupStats).length}*`, msg);
+    },
+
+    top: async (sock, from, msg, args, sender) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const groupStats = groupMsgStats.get(from) || {};
+        const sorted = Object.entries(groupStats)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+        if (!sorted.length) return reply(sock, from, "❌ Pas encore de stats. Commencez à chatter!", msg);
+        const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+        let text = `🏆 *TOP 10 MEMBRES ACTIFS*\n\n`;
+        const mentions = [];
+        for (let i = 0; i < sorted.length; i++) {
+            const [jid, count] = sorted[i];
+            text += `${medals[i]} @${shortNum(jid)} — *${count} msgs*\n`;
+            mentions.push(jid);
+        }
+        await sock.sendMessage(from, { text, mentions }, { quoted: msg });
+    },
+
+    monscore: async (sock, from, msg, args, sender) => {
+        const groupStats = groupMsgStats.get(from) || {};
+        const myMsgs = groupStats[sender] || 0;
+        const coins = getCoins(sender);
+        const lvl = getLevel(sender);
+        await reply(sock, from,
+            `📈 *Ton Score*\n\n` +
+            `👤 @${shortNum(sender)}\n` +
+            `💬 Messages: *${myMsgs}*\n` +
+            `⭐ Niveau: *${lvl.level}* (${lvl.xp} XP)\n` +
+            `💰 Coins: *${coins}*`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   💰 ÉCONOMIE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    solde: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || sender;
+        const coins = getCoins(target);
+        const lvl = getLevel(target);
+        await reply(sock, from,
+            `💰 *Solde O-TECH*\n\n` +
+            `👤 @${shortNum(target)}\n` +
+            `💵 Coins: *${coins}*\n` +
+            `⭐ Niveau: *${lvl.level}*\n` +
+            `📊 XP: *${lvl.xp}*`, msg);
+    },
+
+    daily: async (sock, from, msg, args, sender) => {
+        const now = Date.now();
+        const lastDaily = dailyCooldown.get(sender) || 0;
+        const cooldown = 24 * 60 * 60 * 1000;
+        if (now - lastDaily < cooldown) {
+            const reste = Math.ceil((cooldown - (now - lastDaily)) / 3600000);
+            return reply(sock, from, `⏳ Daily déjà réclamé! Reviens dans *${reste}h*`, msg);
+        }
+        const gain = Math.floor(Math.random() * 200) + 100;
+        addCoins(sender, gain);
+        dailyCooldown.set(sender, now);
+        await reply(sock, from,
+            `🎁 *Daily Reward!*\n\n` +
+            `💰 Tu as reçu *${gain} coins*!\n` +
+            `💵 Solde total: *${getCoins(sender)} coins*\n\n` +
+            `_Reviens demain pour ton prochain daily!_`, msg);
+    },
+
+    transfert: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .transfert @user montant", msg);
+        const montant = parseInt(args[args.length - 1]);
+        if (isNaN(montant) || montant <= 0) return reply(sock, from, "❌ Montant invalide.", msg);
+        const target = mentioned[0];
+        const myCoins = getCoins(sender);
+        if (myCoins < montant) return reply(sock, from, `❌ Pas assez de coins! Tu as *${myCoins}*`, msg);
+        addCoins(sender, -montant);
+        addCoins(target, montant);
+        await sock.sendMessage(from, {
+            text: `💸 *Transfert effectué!*\n\n` +
+                `De: @${shortNum(sender)}\n` +
+                `À: @${shortNum(target)}\n` +
+                `💰 Montant: *${montant} coins*`,
+            mentions: [sender, target]
+        }, { quoted: msg });
+    },
+
+    pari: async (sock, from, msg, args, sender) => {
+        const montant = parseInt(args[0]);
+        if (isNaN(montant) || montant <= 0) return reply(sock, from, "❌ Usage: .pari 100", msg);
+        const myCoins = getCoins(sender);
+        if (myCoins < montant) return reply(sock, from, `❌ Pas assez de coins! Tu as *${myCoins}*`, msg);
+        const gagne = Math.random() > 0.5;
+        if (gagne) {
+            addCoins(sender, montant);
+            await reply(sock, from,
+                `🎰 *GAGNÉ!*\n\n+${montant} coins!\n💰 Solde: *${getCoins(sender)} coins*`, msg);
+        } else {
+            addCoins(sender, -montant);
+            await reply(sock, from,
+                `🎰 *PERDU!*\n\n-${montant} coins!\n💰 Solde: *${getCoins(sender)} coins*`, msg);
+        }
+    },
+
+    work: async (sock, from, msg, args, sender) => {
+        const now = Date.now();
+        const lastWork = workCooldown.get(sender) || 0;
+        const cooldown = 60 * 60 * 1000; // 1h
+        if (now - lastWork < cooldown) {
+            const reste = Math.ceil((cooldown - (now - lastWork)) / 60000);
+            return reply(sock, from, `⏳ Tu viens de travailler! Reviens dans *${reste} min*`, msg);
+        }
+        const jobs = [
+            { job: "développeur web", gain: 80 },
+            { job: "graphiste", gain: 60 },
+            { job: "vendeur O-TECH", gain: 70 },
+            { job: "technicien réseau", gain: 90 },
+            { job: "community manager", gain: 50 },
+        ];
+        const job = randomChoice(jobs);
+        addCoins(sender, job.gain);
+        workCooldown.set(sender, now);
+        await reply(sock, from,
+            `💼 *Work Done!*\n\n` +
+            `Tu as travaillé comme *${job.job}*\n` +
+            `💰 Gagné: *${job.gain} coins*\n` +
+            `💵 Solde: *${getCoins(sender)} coins*\n\n` +
+            `_Reviens dans 1h pour retravailler_`, msg);
+    },
+
+    rob: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .rob @user", msg);
+        const target = mentioned[0];
+        if (isOwner(target)) return reply(sock, from, "❌ Tu peux pas voler l'owner!", msg);
+        const targetCoins = getCoins(target);
+        if (targetCoins < 50) return reply(sock, from, `❌ @${shortNum(target)} est trop pauvre!`, msg);
+        const success = Math.random() > 0.45;
+        if (success) {
+            const vol = Math.floor(targetCoins * 0.2);
+            addCoins(sender, vol);
+            addCoins(target, -vol);
+            await sock.sendMessage(from, {
+                text: `🦹 *Vol réussi!*\n\n` +
+                    `Tu as volé *${vol} coins* à @${shortNum(target)}!\n` +
+                    `💰 Solde: *${getCoins(sender)} coins*`,
+                mentions: [sender, target]
+            }, { quoted: msg });
+        } else {
+            const amende = 50;
+            addCoins(sender, -amende);
+            await sock.sendMessage(from, {
+                text: `🚔 *Vol raté!*\n\n` +
+                    `Tu as été arrêté en essayant de voler @${shortNum(target)}!\n` +
+                    `💸 Amende: *${amende} coins*\n` +
+                    `💰 Solde: *${getCoins(sender)} coins*`,
+                mentions: [sender, target]
+            }, { quoted: msg });
+        }
+    },
+
+    richesse: async (sock, from, msg) => {
+        const sorted = [...coinsData.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+        if (!sorted.length) return reply(sock, from, "❌ Personne n'a encore de coins!", msg);
+        const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+        let text = `💰 *TOP 10 RICHESSES O-TECH*\n\n`;
+        const mentions = sorted.map(([jid]) => jid);
+        for (let i = 0; i < sorted.length; i++) {
+            const [jid, coins] = sorted[i];
+            text += `${medals[i]} @${shortNum(jid)} — *${coins} coins*\n`;
+        }
+        await sock.sendMessage(from, { text, mentions }, { quoted: msg });
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   🖼️ IMAGES FUN (GIF & MEME via URL publiques)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    meme: async (sock, from, msg) => {
+        const memes = [
+            "https://i.imgur.com/RPyxZSU.jpg",
+            "https://i.imgur.com/1uOWpvB.jpg",
+            "https://i.imgur.com/HiHJSCH.jpg",
+            "https://i.imgur.com/O5XOG7O.jpg",
+            "https://i.imgur.com/yL5oDEQ.jpg",
+        ];
+        try {
+            const url = randomChoice(memes);
+            const res = await fetch(url);
+            const buf = Buffer.from(await res.arrayBuffer());
+            await sock.sendMessage(from, { image: buf, caption: "😂 *Meme du jour!*" }, { quoted: msg });
+        } catch (_) {
+            await reply(sock, from, "❌ Impossible de charger le meme.", msg);
+        }
+    },
+
+    ship: async (sock, from, msg, args) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (mentioned.length < 2) return reply(sock, from, "❌ Usage: .ship @user1 @user2", msg);
+        const pct = Math.floor(Math.random() * 101);
+        let emoji = pct >= 80 ? "💕" : pct >= 50 ? "💛" : pct >= 30 ? "😐" : "💔";
+        const bar = "█".repeat(Math.floor(pct / 10)) + "░".repeat(10 - Math.floor(pct / 10));
+        await sock.sendMessage(from, {
+            text: `💘 *SHIP METER*\n\n` +
+                `@${shortNum(mentioned[0])}\n` +
+                `❤️ x ❤️\n` +
+                `@${shortNum(mentioned[1])}\n\n` +
+                `[${bar}] *${pct}%* ${emoji}`,
+            mentions: mentioned
+        }, { quoted: msg });
+    },
+
+    hug: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .hug @user", msg);
+        await sock.sendMessage(from, {
+            text: `🤗 @${shortNum(sender)} fait un câlin à @${shortNum(mentioned[0])}!\n_(っ◕‿◕)っ_`,
+            mentions: [sender, ...mentioned]
+        }, { quoted: msg });
+    },
+
+    slap: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .slap @user", msg);
+        if (isOwner(mentioned[0])) return reply(sock, from, "❌ Tu peux pas gifler l'owner!", msg);
+        await sock.sendMessage(from, {
+            text: `👋 @${shortNum(sender)} gifle @${shortNum(mentioned[0])}! 😂\n*BAM!* 💥`,
+            mentions: [sender, ...mentioned]
+        }, { quoted: msg });
+    },
+
+    fight: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .fight @user", msg);
+        const winner = Math.random() > 0.5 ? sender : mentioned[0];
+        const loser = winner === sender ? mentioned[0] : sender;
+        const moves = ["uppercut", "coup de pied volant", "combo 3 coups", "esquive + contre", "KO final"];
+        await sock.sendMessage(from, {
+            text: `⚔️ *FIGHT!*\n\n` +
+                `@${shortNum(sender)} VS @${shortNum(mentioned[0])}\n\n` +
+                `💥 ${randomChoice(moves)}...\n` +
+                `💥 ${randomChoice(moves)}...\n` +
+                `💥 ${randomChoice(moves)}...\n\n` +
+                `🏆 *@${shortNum(winner)} GAGNE!*\n` +
+                `😵 @${shortNum(loser)} est KO!`,
+            mentions: [sender, ...mentioned]
+        }, { quoted: msg });
+    },
+
+    pp: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || sender;
+        try {
+            const ppUrl = await sock.profilePictureUrl(target, "image");
+            const res = await fetch(ppUrl);
+            const buf = Buffer.from(await res.arrayBuffer());
+            await sock.sendMessage(from, {
+                image: buf,
+                caption: `🖼️ *Photo de profil*\n@${shortNum(target)}`,
+                mentions: [target]
+            }, { quoted: msg });
+        } catch (_) {
+            await reply(sock, from, `❌ @${shortNum(target)} n'a pas de photo de profil.`, msg);
+        }
+    },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -733,7 +1176,32 @@ async function handleMessage(sock, m) {
     const blocked = await runSecurityChecks(sock, from, msg, sender, body);
     if (blocked) return;
 
-    if (!body.startsWith(CONFIG.prefix)) return;
+    // ── TRACKING STATS + XP ─────────────────────────
+    if (isGroup(from)) {
+        if (!groupMsgStats.has(from)) groupMsgStats.set(from, {});
+        const gs = groupMsgStats.get(from);
+        gs[sender] = (gs[sender] || 0) + 1;
+        addXP(sender, 2);
+    }
+
+    // ── VÉRIFICATION RÉPONSES QUIZ/DEVINETTE ─────
+    if (!body.startsWith(CONFIG.prefix)) {
+        const quizKey = `quiz_${from}_${sender}`;
+        const devKey = `devinette_${from}_${sender}`;
+        for (const key of [quizKey, devKey]) {
+            const session = quizSessions.get(key);
+            if (session && body.toLowerCase().includes(session.answer.toLowerCase())) {
+                quizSessions.delete(key);
+                const gain = 50;
+                addCoins(sender, gain);
+                addXP(sender, 20);
+                await reply(sock, from,
+                    `✅ *BONNE RÉPONSE!*\n\nRéponse: *${session.correct}*\n💰 +${gain} coins!\n⭐ +20 XP!`, msg);
+                return;
+            }
+        }
+        return;
+    }
 
     const args = body.slice(CONFIG.prefix.length).trim().split(/\s+/);
     const commandName = args.shift().toLowerCase();
