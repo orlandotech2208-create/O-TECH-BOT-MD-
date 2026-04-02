@@ -160,49 +160,49 @@ const commands = {
             `║  _Powered by Orlando Tech_  ║\n` +
             `╚═══════════════════════════╝\n\n` +
             `*📋 INFO*\n` +
-            `▸ ${p}menu — Ce menu\n` +
-            `▸ ${p}ping — Test connexion\n` +
-            `▸ ${p}botinfo — Infos du bot\n` +
-            `▸ ${p}uptime — Temps en ligne\n` +
-            `▸ ${p}owner — Contact owner\n\n` +
-            `*🛠 MODÉRATION* _(groupe)_\n` +
-            `▸ ${p}kick @user — Expulser\n` +
-            `▸ ${p}add numéro — Ajouter\n` +
-            `▸ ${p}promote @user — Rendre admin\n` +
-            `▸ ${p}demote @user — Retirer admin\n` +
-            `▸ ${p}mute — Fermer le groupe\n` +
-            `▸ ${p}unmute — Ouvrir le groupe\n` +
-            `▸ ${p}warn @user — Avertir (3=kick)\n` +
-            `▸ ${p}resetwarn @user — Reset warn\n` +
-            `▸ ${p}tag [msg] — Mentionner tout le monde\n` +
-            `▸ ${p}tagadmin [msg] — Mentionner admins\n` +
-            `▸ ${p}admins — Liste des admins\n` +
-            `▸ ${p}groupinfo — Infos + photo groupe\n` +
-            `▸ ${p}link — Lien d'invitation\n` +
-            `▸ ${p}revoke — Révoquer le lien\n` +
-            `▸ ${p}delete — Supprimer un message\n\n` +
+            `▸ ${p}menu\n` +
+            `▸ ${p}ping\n` +
+            `▸ ${p}botinfo\n` +
+            `▸ ${p}uptime\n` +
+            `▸ ${p}owner\n\n` +
+            `*🛠 MODÉRATION*\n` +
+            `▸ ${p}kick\n` +
+            `▸ ${p}add\n` +
+            `▸ ${p}promote\n` +
+            `▸ ${p}demote\n` +
+            `▸ ${p}mute\n` +
+            `▸ ${p}unmute\n` +
+            `▸ ${p}warn\n` +
+            `▸ ${p}resetwarn\n` +
+            `▸ ${p}tag\n` +
+            `▸ ${p}tagadmin\n` +
+            `▸ ${p}admins\n` +
+            `▸ ${p}groupinfo\n` +
+            `▸ ${p}link\n` +
+            `▸ ${p}revoke\n` +
+            `▸ ${p}delete\n\n` +
             `*🛡 SÉCURITÉ*\n` +
-            `▸ ${p}antilink on/off\n` +
-            `▸ ${p}antispam on/off\n` +
-            `▸ ${p}antibadword on/off\n\n` +
+            `▸ ${p}antilink\n` +
+            `▸ ${p}antispam\n` +
+            `▸ ${p}antibadword\n\n` +
             `*🎮 FUN & JEUX*\n` +
-            `▸ ${p}blague — Blague aléatoire\n` +
-            `▸ ${p}8ball question — Boule magique\n` +
-            `▸ ${p}pile — Pile ou Face\n` +
-            `▸ ${p}dé [faces] — Lancer un dé\n` +
-            `▸ ${p}rps pierre/feuille/ciseaux\n` +
-            `▸ ${p}compteur 5 — Compte à rebours\n` +
-            `▸ ${p}conseil — Conseil du jour\n` +
-            `▸ ${p}quote — Citation inspirante\n\n` +
+            `▸ ${p}blague\n` +
+            `▸ ${p}8ball\n` +
+            `▸ ${p}pile\n` +
+            `▸ ${p}dé\n` +
+            `▸ ${p}rps\n` +
+            `▸ ${p}compteur\n` +
+            `▸ ${p}conseil\n` +
+            `▸ ${p}quote\n\n` +
             `*📲 MÉDIAS & UTILITAIRES*\n` +
-            `▸ ${p}vv — Voir un message view once\n` +
-            `▸ ${p}send — Enregistrer statut (en réponse)\n` +
-            `▸ ${p}sticker — Image → Sticker\n` +
-            `▸ ${p}tts texte — Texte stylé\n` +
-            `▸ ${p}calc expression — Calculatrice\n` +
-            `▸ ${p}météo ville — Météo (beta)\n` +
-            `▸ ${p}profil @user — Voir profil\n\n` +
-            `_O-TECH © 2025 — Innovation constante_ 🚀`;
+            `▸ ${p}vv\n` +
+            `▸ ${p}send\n` +
+            `▸ ${p}sticker\n` +
+            `▸ ${p}tts\n` +
+            `▸ ${p}calc\n` +
+            `▸ ${p}météo\n` +
+            `▸ ${p}profil\n\n` +
+            `_O-TECH © 2026 — Innovation constante_ 🚀`;
 
         await sendImg(sock, from, ANON_IMG, menuText, msg);
     },
@@ -343,7 +343,10 @@ const commands = {
         const meta = await sock.groupMetadata(from);
         const members = meta.participants.map((p) => p.id);
         const customMsg = args.join(" ") || "📢 Attention tout le monde!";
-        let text = `*${customMsg}*\n\n`;
+        let text =
+            `*${customMsg}*\n\n` +
+            `🏢 *${meta.subject}*\n` +
+            `👥 *${members.length} membres*\n\n`;
         for (const m of members) text += `@${shortNum(m)} `;
         await sock.sendMessage(from, { text, mentions: members }, { quoted: msg });
     },
@@ -711,7 +714,7 @@ async function interceptViewOnce(sock, msg) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function handleMessage(sock, m) {
     const msg = m.messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+    // fromMe géré plus bas
 
     const from = msg.key.remoteJid;
     const sender = msg.key.participant || from;
@@ -720,6 +723,9 @@ async function handleMessage(sock, m) {
 
     // Intercepter view once automatiquement
     await interceptViewOnce(sock, msg);
+
+    // Ignorer les messages du bot sauf si c'est l'owner qui commande
+    if (msg.key.fromMe && !isOwner(sender)) return;
 
     if (CONFIG.mode === "group" && !inGroup) return;
     if (CONFIG.mode === "private" && inGroup) return;
