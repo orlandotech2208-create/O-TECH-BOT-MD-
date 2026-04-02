@@ -99,7 +99,11 @@ const getBody = (msg) =>
     msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId || "";
 
 const isGroup = (jid) => jid?.endsWith("@g.us");
-const isOwner = (jid) => jid?.replace(/:[0-9]+@/, "@").replace("@s.whatsapp.net", "") === CONFIG.ownerNumber;
+const isOwner = (jid) => {
+    if (!jid) return false;
+    const clean = jid.replace(/:[0-9]+@/, "@").replace("@s.whatsapp.net", "").replace("@c.us", "");
+    return clean === CONFIG.ownerNumber || clean.split("@")[0] === CONFIG.ownerNumber;
+};
 const shortNum = (jid) => jid?.split("@")[0] || jid;
 
 const reply = async (sock, from, text, quoted) =>
@@ -177,78 +181,59 @@ const commands = {
     // ── MENU ─────────────────────────────────────
     menu: async (sock, from, msg, args, sender) => {
         const p = CONFIG.prefix;
+        const now = new Date();
+        const hour = now.getHours();
+        const greeting = hour < 12 ? "🌅 Bonjou" : hour < 18 ? "☀️ Bonswa" : "🌙 Bonswa";
         const menuText =
-            `╔═══════════════════════════╗\n` +
-            `║       🤖 *O-TECH BOT*       ║\n` +
-            `║  _Powered by Orlando Tech_  ║\n` +
-            `╚═══════════════════════════╝\n\n` +
-            `*📋 INFO*\n` +
-            `▸ ${p}menu\n` +
-            `▸ ${p}ping\n` +
-            `▸ ${p}botinfo\n` +
-            `▸ ${p}uptime\n` +
-            `▸ ${p}owner\n\n` +
-            `*🛠 MODÉRATION*\n` +
-            `▸ ${p}kick\n` +
-            `▸ ${p}add\n` +
-            `▸ ${p}promote\n` +
-            `▸ ${p}demote\n` +
-            `▸ ${p}mute\n` +
-            `▸ ${p}unmute\n` +
-            `▸ ${p}warn\n` +
-            `▸ ${p}resetwarn\n` +
-            `▸ ${p}tag\n` +
-            `▸ ${p}tagadmin\n` +
-            `▸ ${p}admins\n` +
-            `▸ ${p}groupinfo\n` +
-            `▸ ${p}link\n` +
-            `▸ ${p}revoke\n` +
-            `▸ ${p}delete\n\n` +
-            `*🛡 SÉCURITÉ*\n` +
-            `▸ ${p}antilink\n` +
-            `▸ ${p}antispam\n` +
-            `▸ ${p}antibadword\n\n` +
-            `*🎮 FUN & JEUX*\n` +
-            `▸ ${p}blague\n` +
-            `▸ ${p}8ball\n` +
-            `▸ ${p}pile\n` +
-            `▸ ${p}dé\n` +
-            `▸ ${p}rps\n` +
-            `▸ ${p}compteur\n` +
-            `▸ ${p}conseil\n` +
-            `▸ ${p}quote\n\n` +
-            `*📲 MÉDIAS & UTILITAIRES*\n` +
-            `▸ ${p}vv\n` +
-            `▸ ${p}send\n` +
-            `▸ ${p}sticker\n` +
-            `▸ ${p}tts\n` +
-            `▸ ${p}calc\n` +
-            `▸ ${p}météo\n` +
-            `▸ ${p}profil\n` +
-            `▸ ${p}pp\n\n` +
-            `*🎮 JEUX*\n` +
-            `▸ ${p}quiz\n` +
-            `▸ ${p}pendu\n` +
-            `▸ ${p}lettre\n` +
-            `▸ ${p}devinette\n` +
-            `▸ ${p}ship\n` +
-            `▸ ${p}hug\n` +
-            `▸ ${p}slap\n` +
-            `▸ ${p}fight\n` +
-            `▸ ${p}meme\n\n` +
-            `*📊 STATS*\n` +
-            `▸ ${p}stats\n` +
-            `▸ ${p}top\n` +
-            `▸ ${p}monscore\n\n` +
-            `*💰 ÉCONOMIE*\n` +
-            `▸ ${p}solde\n` +
-            `▸ ${p}daily\n` +
-            `▸ ${p}work\n` +
-            `▸ ${p}pari\n` +
-            `▸ ${p}transfert\n` +
-            `▸ ${p}rob\n` +
-            `▸ ${p}richesse\n\n` +
-            `_O-TECH © 2026 — Innovation constante_ 🚀`;
+            `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n` +
+            `┃  ⚡ *O-TECH BOT v3.0* ⚡   ┃\n` +
+            `┃  _Powered by Orlando Tech_  ┃\n` +
+            `┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
+            `${greeting}! 👋 *@${shortNum(sender)}*\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  📋 *INFO & GÉNÉRAL* ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}menu  › ${p}ping  › ${p}botinfo\n` +
+            `› ${p}uptime  › ${p}owner\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🛡️ *MODÉRATION*     ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}kick  › ${p}add  › ${p}promote\n` +
+            `› ${p}demote  › ${p}mute  › ${p}unmute\n` +
+            `› ${p}warn  › ${p}resetwarn  › ${p}delete\n` +
+            `› ${p}tag  › ${p}tagadmin  › ${p}admins\n` +
+            `› ${p}groupinfo  › ${p}link  › ${p}revoke\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🔒 *SÉCURITÉ*       ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}antilink  › ${p}antispam\n` +
+            `› ${p}antibadword\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🎮 *FUN & JEUX*     ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}blague  › ${p}8ball  › ${p}pile\n` +
+            `› ${p}dé  › ${p}rps  › ${p}compteur\n` +
+            `› ${p}conseil  › ${p}quote  › ${p}meme\n` +
+            `› ${p}ship  › ${p}hug  › ${p}slap  › ${p}fight\n` +
+            `› ${p}quiz  › ${p}pendu  › ${p}lettre\n` +
+            `› ${p}devinette\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  📲 *MÉDIAS & OUTILS*║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}vv  › ${p}send  › ${p}sticker\n` +
+            `› ${p}tts  › ${p}calc  › ${p}météo\n` +
+            `› ${p}profil  › ${p}pp\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  📊 *STATS & ÉCONOMIE*║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}stats  › ${p}top  › ${p}monscore\n` +
+            `› ${p}solde  › ${p}daily  › ${p}work\n` +
+            `› ${p}pari  › ${p}transfert  › ${p}rob\n` +
+            `› ${p}richesse\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `⚡ *${Object.keys(commands).length} commandes* disponibles\n` +
+            `🌐 *O-TECH © 2026* — Innovation constante 🚀\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         await sendImg(sock, from, ANON_IMG, menuText, msg);
     },
@@ -389,12 +374,28 @@ const commands = {
         const meta = await sock.groupMetadata(from);
         const members = meta.participants.map((p) => p.id);
         const customMsg = args.join(" ") || "📢 Attention tout le monde!";
+        const adminsCount = meta.participants.filter(p => p.admin).length;
         let text =
-            `*${customMsg}*\n\n` +
-            `🏢 *${meta.subject}*\n` +
-            `👥 *${members.length} membres*\n\n`;
+            `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `🔔 *${customMsg}*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `🏢 *Groupe:* ${meta.subject}\n` +
+            `👥 *Membres:* ${members.length}\n` +
+            `👮 *Admins:* ${adminsCount}\n\n` +
+            `📌 *Membres tagués:*\n`;
         for (const m of members) text += `@${shortNum(m)} `;
-        await sock.sendMessage(from, { text, mentions: members }, { quoted: msg });
+        text += `\n\n_— O-TECH BOT 🚀_`;
+
+        // Essayer d'envoyer avec la photo du groupe
+        try {
+            const gpUrl = await sock.profilePictureUrl(from, "image");
+            const res = await fetch(gpUrl);
+            const gpBuf = Buffer.from(await res.arrayBuffer());
+            await sock.sendMessage(from, { image: gpBuf, caption: text, mentions: members }, { quoted: msg });
+        } catch (_) {
+            // Pas de photo de groupe → envoyer texte seul
+            await sock.sendMessage(from, { text, mentions: members }, { quoted: msg });
+        }
     },
 
     // ── TAG ADMIN ────────────────────────────────
@@ -493,27 +494,33 @@ const commands = {
     // ── VV (View Once bypass) ─────────────────────
     vv: async (sock, from, msg, args, sender) => {
         const ctx = msg.message?.extendedTextMessage?.contextInfo;
-        if (!ctx?.stanzaId) return reply(sock, from, "❌ Réponds à un message view once avec .vv", msg);
+        if (!ctx) return reply(sock, from, "❌ Réponds à un message view once avec .vv", msg);
 
-        const stored = viewOnceStore.get(ctx.stanzaId);
-        if (!stored) return reply(sock, from, "❌ Message view once introuvable. Il doit être récent.", msg);
+        // stanzaId = l'ID du message original auquel on répond
+        const stanzaId = ctx.stanzaId;
+        if (!stanzaId) return reply(sock, from, "❌ Réponds à un message view once avec .vv", msg);
+
+        // Chercher dans le store par stanzaId (= key.id du message view once)
+        const stored = viewOnceStore.get(stanzaId);
+        if (!stored) return reply(sock, from,
+            "❌ View once introuvable. Il doit être récent (< 5min) et arrivé *après* que le bot était connecté.", msg);
 
         try {
             if (stored.type === "image") {
                 await sock.sendMessage(from, {
                     image: stored.buffer,
-                    caption: `👁 *View Once déverrouillé*\n_De:_ @${shortNum(stored.sender)}`,
+                    caption: `👁️ *View Once déverrouillé par O-TECH BOT*\n_Envoyé par:_ @${shortNum(stored.sender)}`,
                     mentions: [stored.sender]
                 }, { quoted: msg });
             } else if (stored.type === "video") {
                 await sock.sendMessage(from, {
                     video: stored.buffer,
-                    caption: `👁 *View Once déverrouillé*\n_De:_ @${shortNum(stored.sender)}`,
+                    caption: `👁️ *View Once déverrouillé par O-TECH BOT*\n_Envoyé par:_ @${shortNum(stored.sender)}`,
                     mentions: [stored.sender]
                 }, { quoted: msg });
             }
         } catch (e) {
-            await reply(sock, from, "❌ Erreur lors du déverrouillage.", msg);
+            await reply(sock, from, `❌ Erreur lors du déverrouillage: ${e.message}`, msg);
         }
     },
 
@@ -1139,17 +1146,24 @@ async function interceptViewOnce(sock, msg) {
 
     if (!viewOnceMsg) return;
 
+    // Stocker avec le key.id du message view once (c'est le stanzaId dans les réponses)
+    const storeKey = msg.key.id;
+
     try {
         if (viewOnceMsg.imageMessage) {
             const buf = await downloadMedia(viewOnceMsg.imageMessage, "image");
-            viewOnceStore.set(msg.key.id, { type: "image", buffer: buf, sender });
-            setTimeout(() => viewOnceStore.delete(msg.key.id), 300000); // 5 min
+            viewOnceStore.set(storeKey, { type: "image", buffer: buf, sender });
+            console.log(`[VV] Image view once interceptée: ${storeKey}`);
+            setTimeout(() => viewOnceStore.delete(storeKey), 600000); // 10 min
         } else if (viewOnceMsg.videoMessage) {
             const buf = await downloadMedia(viewOnceMsg.videoMessage, "video");
-            viewOnceStore.set(msg.key.id, { type: "video", buffer: buf, sender });
-            setTimeout(() => viewOnceStore.delete(msg.key.id), 300000);
+            viewOnceStore.set(storeKey, { type: "video", buffer: buf, sender });
+            console.log(`[VV] Vidéo view once interceptée: ${storeKey}`);
+            setTimeout(() => viewOnceStore.delete(storeKey), 600000);
         }
-    } catch (_) {}
+    } catch (e) {
+        console.warn("[VV] Erreur interception:", e.message);
+    }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1160,15 +1174,19 @@ async function handleMessage(sock, m) {
     // fromMe géré plus bas
 
     const from = msg.key.remoteJid;
-    const sender = msg.key.participant || from;
+    // Si fromMe (message envoyé par le bot = l'owner), on force le sender à ownerNumber
+    const rawSender = msg.key.participant || from;
+    const sender = msg.key.fromMe
+        ? CONFIG.ownerNumber + "@s.whatsapp.net"
+        : rawSender;
     const body = getBody(msg).trim();
     const inGroup = isGroup(from);
 
     // Intercepter view once automatiquement
     await interceptViewOnce(sock, msg);
 
-    // Ignorer les messages du bot sauf si c'est l'owner qui commande
-    if (msg.key.fromMe && !isOwner(sender)) return;
+    // fromMe = message envoyé depuis ce numéro (le bot = l'owner)
+    // On accepte TOUS les messages fromMe comme venant de l'owner
 
     if (CONFIG.mode === "group" && !inGroup) return;
     if (CONFIG.mode === "private" && inGroup) return;
@@ -1241,9 +1259,14 @@ async function startOTechBot() {
         logger: pino({ level: "silent" }),
         browser: ["Ubuntu", "Chrome", "20.0.04"],
         connectTimeoutMs: 60_000,
-        keepAliveIntervalMs: 30_000,
+        keepAliveIntervalMs: 25_000,
         syncFullHistory: false,
         markOnlineOnConnect: false,
+        generateHighQualityLinkPreview: false,
+        getMessage: async (key) => {
+            // Retourner undefined pour les messages manquants (évite les timeouts)
+            return undefined;
+        },
     });
 
     // Pairing code APRÈS création socket + délai 2s
