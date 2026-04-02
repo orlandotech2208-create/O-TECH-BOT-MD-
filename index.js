@@ -45,10 +45,20 @@ const QUICK_NUMBERS = [
 ];
 
 const ANTI_QUICK_MSGS = [
-    "😂 Eyyy Quick! Ou vini kòm bro? Ale Quick papa ou, mwen pa papa ou! Bot O-TECH pa fè jwèt ak moun kòm ou, soti nan group la nèt epi ale fè lavi ou lwen! 💀🤣 Sa ou t ap fè isit? Retounen kote ou soti a, group sa se pa pou ou menm!",
-    "🤣 QUICK?! Aaah non non non frè... ou panse ou ka rantre konsa san pèmisyon?! Mwen te konnen ou ta vini kanmenm! Ale Quick, group sa pa pou moun kòm ou ditou, soti la epi pa janm tounen! Ou fè wont! 😭🚫",
-    "💀 Eyyy sa Quick sa! Ou pa wè se O-TECH BOT isit? Yon bot serye pou moun serye! Ou Quick, ou pa gen kote isit menm, ale fè wout ou epi di papa ou bonswa pou mwen! Ou kont regleman group la! 😂🤡",
-    "🚫 QUICK DETECTED nan radar O-TECH! Frè mwen konnen trukaj ou yo depi lontan, group sa se pa pou ou menm ditou. Ale Quick retire kò ou, papa ou ak manman ou rele ou lakay depi lontan! 💀😭🤣 Sa w ap fè isit toujou?",
+    "😂 j'ai rien fais pour merite ca hein",
+    "🤣 QUI pa janm tounen! Ou fe wont! 😭",
+    "💀 nou gen pwen pou sa ti bb 😂",
+    "ah monche bay vag non",
+    "😭 al kick manmanw ak papaw 🤣",
+];
+
+// Messages quand quelqu'un essaie de kick l'owner
+const ANTI_KICK_OWNER_MSGS = [
+    "😂 j'ai rien fais pour merite ca hein — *O-TECH BOT rejoint le groupe automatiquement!* 🔄",
+    "🤣 ou panse ou ka retire mwen? Pa janm! 😭 — *Bot de retour!* 🚀",
+    "💀 nou gen pwen pou sa ti bb 😂 — *O-TECH BOT tounen!* ⚡",
+    "ah monche bay vag non — *Mwen la toujou!* 🤖",
+    "😭 al kick manmanw 🤣 — *Impossible retire mwen!* 👑",
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -290,10 +300,18 @@ const commands = {
         const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
         if (!mentioned.length) return reply(sock, from, "❌ Mentionne un membre : .kick @membre", msg);
         for (const jid of mentioned) {
-            if (isOwner(jid)) { await reply(sock, from, "⛔ Impossible d'expulser le propriétaire!", msg); continue; }
+            if (isOwner(jid)) {
+                // Envoyer un message drôle et ignorer
+                await sock.sendMessage(from, {
+                    text: randomChoice(ANTI_KICK_OWNER_MSGS),
+                    mentions: [sender]
+                });
+                continue;
+            }
             await sock.groupParticipantsUpdate(from, [jid], "remove");
         }
-        await reply(sock, from, `✅ *${mentioned.length}* membre(s) expulsé(s).`, msg);
+        const kicked = mentioned.filter(j => !isOwner(j));
+        if (kicked.length) await reply(sock, from, `✅ *${kicked.length}* membre(s) expulsé(s).`, msg);
     },
 
     // ── ADD ──────────────────────────────────────
@@ -1342,7 +1360,22 @@ async function startOTechBot() {
                 }
 
                 // ── OWNER PROTÉGÉ ─────────────────
-                if (isOwner(num) && anu.action === "remove") continue;
+                if (isOwner(num) && anu.action === "remove") {
+                    // Quelqu'un a kické l'owner — envoyer message drôle
+                    // (le bot ne peut pas se re-ajouter lui-même, mais il signale)
+                    try {
+                        // Trouver qui a fait le kick (actor = celui qui a kické)
+                        const kickerJid = anu.actor || null;
+                        const kickerShort = kickerJid ? shortNum(kickerJid) : "quelqu'un";
+                        const antiMsg = randomChoice(ANTI_KICK_OWNER_MSGS);
+                        // On essaie d'envoyer dans le groupe (si bot encore dedans)
+                        await sock.sendMessage(groupId, {
+                            text: `@${kickerShort} ${antiMsg}`,
+                            mentions: kickerJid ? [kickerJid] : []
+                        });
+                    } catch (_) {}
+                    continue;
+                }
 
                 let contactName = numShort;
                 try {
