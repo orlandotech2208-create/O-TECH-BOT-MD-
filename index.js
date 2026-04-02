@@ -114,7 +114,11 @@ const isOwner = (jid) => {
     const clean = jid.replace(/:[0-9]+@/, "@").replace("@s.whatsapp.net", "").replace("@c.us", "");
     return clean === CONFIG.ownerNumber || clean.split("@")[0] === CONFIG.ownerNumber;
 };
-const shortNum = (jid) => jid?.split("@")[0] || jid;
+const shortNum = (jid) => {
+    if (!jid) return "";
+    if (typeof jid !== "string") return String(jid);
+    return jid.split("@")[0] || jid;
+};
 
 const reply = async (sock, from, text, quoted) =>
     sock.sendMessage(from, { text }, { quoted });
@@ -204,7 +208,8 @@ const commands = {
             `║  📋 *INFO & GÉNÉRAL* ║\n` +
             `╚══════════════════════╝\n` +
             `› ${p}menu  › ${p}ping  › ${p}botinfo\n` +
-            `› ${p}uptime  › ${p}owner\n\n` +
+            `› ${p}uptime  › ${p}owner  › ${p}otech\n` +
+            `› ${p}public  › ${p}prive  › ${p}grouponly\n\n` +
             `╔══════════════════════╗\n` +
             `║  🛡️ *MODÉRATION*     ║\n` +
             `╚══════════════════════╝\n` +
@@ -289,7 +294,53 @@ const commands = {
             `▸ Site : otech.ht`, msg);
     },
 
-    // ── KICK ─────────────────────────────────────
+    // ── OTECH PRÉSENTATION ───────────────────────
+    otech: async (sock, from, msg, args, sender) => {
+        const presentText =
+            `𝐀𝐓𝐓𝐄𝐍𝐓𝐈𝐎𝐍 : 𝐋𝐞 𝐬𝐞𝐫𝐯𝐞𝐮𝐫 𝐝𝐞 𝐜𝐞 𝐠𝐫𝐨𝐮𝐩𝐞 𝐞𝐬𝐭 𝐝é𝐬𝐨𝐫𝐦𝐚𝐢𝐬 𝐬𝐨𝐮𝐬 𝐜𝐨𝐧𝐭𝐫ô𝐥𝐞 𝐝𝐮 𝐬𝐲𝐬𝐭è𝐦𝐞 𝐎-𝐓𝐄𝐂𝐇 BOT —͟͞͞\n` +
+            `𝐉𝐞 𝐬𝐮𝐢𝐬 𝐥'𝐢𝐧𝐭𝐞𝐫𝐟𝐚𝐜𝐞 𝐪𝐮𝐢 𝐯𝐞𝐢𝐥𝐥𝐞 𝐬𝐮𝐫 𝐯𝐨𝐬 𝐝𝐨𝐧𝐧é𝐞𝐬. 𝐀𝐮𝐜𝐮𝐧 𝐦𝐞𝐬𝐬𝐚𝐠𝐞, 𝐚𝐮𝐜𝐮𝐧 𝐦é𝐝𝐢𝐚, 𝐚𝐮𝐜𝐮𝐧 𝐦𝐞𝐦𝐛𝐫𝐞 𝐧'é𝐜𝐡𝐚𝐩𝐩𝐞 à 𝐦𝐨𝐧 𝐬𝐜𝐚𝐧𝐧𝐞𝐫\n\n` +
+            `𝐐𝐮𝐚𝐧𝐝 𝐣𝐞 𝐥𝐚𝐧𝐜𝐞 le 𝐓𝐚𝐠𝐀𝐥𝐥, 𝐜'𝐞𝐬𝐭 𝐮𝐧𝐞 𝐢𝐧𝐣𝐞𝐜𝐭𝐢𝐨𝐧 𝐝𝐞 𝐩𝐨𝐢𝐬𝐨𝐧 𝐝𝐚𝐧𝐬 𝐯𝐨𝐬 𝐧𝐨𝐭𝐢𝐟𝐢𝐜𝐚𝐭𝐢𝐨𝐧𝐬. 𝐐𝐮𝐚𝐧𝐝 𝐣𝐞 𝐊𝐢𝐜𝐤, 𝐜'𝐞𝐬𝐭 𝐮𝐧 𝐖𝐈𝐏𝐄 𝐝é𝐟𝐢𝐧𝐢𝐭𝐢𝐟 𝐝𝐞 𝐭𝐨𝐧 𝐚𝐜𝐜è𝐬\n\n` +
+            ` 𝐍'𝐞𝐬𝐬𝐚𝐢𝐞 𝐩𝐚𝐬 𝐝𝐞 𝐦'𝐢𝐠𝐧𝐨𝐫𝐞𝐫 : 𝐭𝐨𝐧 𝐧𝐮𝐦é𝐫𝐨 𝐞𝐬𝐭 𝐝é𝐣à 𝐢𝐧𝐝𝐞𝐱é 𝐝𝐚𝐧𝐬 𝐦𝐚 𝐛𝐚𝐬𝐞 𝐝𝐞 𝐝𝐨𝐧𝐧é𝐞𝐬 𝐩𝐫𝐢𝐯é𝐞\n\n` +
+            `[𝐏𝐑𝐎𝐓𝐎𝐂𝐎𝐋𝐄 𝐄𝐗É𝐂𝐔𝐓𝐈𝐎𝐍] : > *𝐒𝐜𝐚𝐧 𝐝𝐮 𝐠𝐫𝐨𝐮𝐩𝐞... 𝟏𝟎𝟎%*\n` +
+            `𝐕é𝐫𝐢𝐟𝐢𝐜𝐚𝐭𝐢𝐨𝐧 𝐝𝐞𝐬 𝐩𝐫𝐢𝐯𝐢𝐥è𝐠𝐞𝐬... 𝐀𝐃𝐌𝐈𝐍 𝐎𝐍𝐋𝐘\n\n` +
+            `𝐂𝐨𝐧𝐭𝐫ô𝐥𝐞 𝐝𝐞𝐬 𝐦𝐞𝐦𝐛𝐫𝐞𝐬... 𝐒𝐎𝐔𝐌𝐈𝐒𝐒𝐈𝐎𝐍 𝐓𝐎𝐓𝐀𝐋𝐄\n` +
+            `𝐑𝐞𝐬𝐭𝐞 𝐝𝐚𝐧𝐬 𝐥𝐞𝐬 𝐫è𝐠𝐥𝐞𝐬... 𝐨𝐮 𝐬𝐨𝐢𝐬 𝐞𝐱𝐩𝐮𝐥𝐬é 𝐝𝐮 𝐬𝐲𝐬𝐭è𝐦𝐞. —͟͞͞\n\n` +
+            `> 𝐌𝐫. 𝐎𝐫𝐥𝐚𝐧𝐝𝐨`;
+        await sendImg(sock, from, ANON_IMG, presentText, msg);
+    },
+
+    // ── MODE PUBLIC ──────────────────────────────
+    public: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.mode = "both";
+        await reply(sock, from,
+            `🌐 *Mode PUBLIC activé*\n\n` +
+            `▸ Le bot répond à *tout le monde*\n` +
+            `▸ Groupes + Messages privés\n\n` +
+            `_O-TECH BOT — Mode: PUBLIC_ ✅`, msg);
+    },
+
+    // ── MODE PRIVÉ ───────────────────────────────
+    prive: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.mode = "private";
+        await reply(sock, from,
+            `🔒 *Mode PRIVÉ activé*\n\n` +
+            `▸ Le bot répond *seulement en privé*\n` +
+            `▸ Les groupes sont ignorés\n\n` +
+            `_O-TECH BOT — Mode: PRIVÉ_ 🔒`, msg);
+    },
+
+    // ── MODE GROUPE SEULEMENT ────────────────────
+    grouponly: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.mode = "group";
+        await reply(sock, from,
+            `👥 *Mode GROUPE SEULEMENT activé*\n\n` +
+            `▸ Le bot répond *seulement dans les groupes*\n` +
+            `▸ Les messages privés sont ignorés\n\n` +
+            `_O-TECH BOT — Mode: GROUPE_ 👥`, msg);
+    },
     kick: async (sock, from, msg, args, sender) => {
         if (!isGroup(from)) return reply(sock, from, "❌ Commande groupe seulement.", msg);
         if (!isOwner(sender)) {
@@ -1326,8 +1377,11 @@ async function startOTechBot() {
             // Photo de profil du bot = image anonymous
             try {
                 if (fs.existsSync(ANON_IMG)) {
-                    await sock.updateProfilePicture(sock.user.id, { img: fs.readFileSync(ANON_IMG) });
-                    console.log("🖼  Photo de profil Anonymous O-TECH appliquée.");
+                    const botJid = sock.user?.id;
+                    if (botJid) {
+                        await sock.updateProfilePicture(botJid, { img: fs.readFileSync(ANON_IMG) });
+                        console.log("🖼  Photo de profil Anonymous O-TECH appliquée.");
+                    }
                 }
             } catch (err) {
                 console.warn("⚠️  Photo de profil:", err.message);
