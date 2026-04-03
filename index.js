@@ -245,6 +245,21 @@ const commands = {
             `› ${p}solde  › ${p}daily  › ${p}work\n` +
             `› ${p}pari  › ${p}transfert  › ${p}rob\n` +
             `› ${p}richesse\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🎵 *MUSIQUE*        ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}musique  › ${p}ytb  › ${p}paroles\n` +
+            `› ${p}playlist  › ${p}radio\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🤖 *INTELLIGENCE IA*║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}ia *[question]* — Poser une question\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  👑 *OWNER ONLY*     ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}admin  › ${p}broadcast  › ${p}listgroups\n` +
+            `› ${p}banuser  › ${p}unbanuser  › ${p}clearstats\n` +
+            `› ${p}aikey  › ${p}public  › ${p}prive\n\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
             `⚡ *${Object.keys(commands).length} commandes* disponibles\n` +
             `🌐 *O-TECH © 2026* — Innovation constante 🚀\n` +
@@ -1151,6 +1166,209 @@ const commands = {
             await reply(sock, from, `❌ @${shortNum(target)} n'a pas de photo de profil.`, msg);
         }
     },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   🤖 MENU IA
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ia: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from,
+            `🤖 *O-TECH IA*\n\nUsage: *.ia ta question*\n\nEx: _.ia c'est quoi l'intelligence artificielle?_`, msg);
+        const question = args.join(" ");
+        await reply(sock, from, `🤖 _Analyse en cours..._`, msg);
+        try {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": CONFIG.anthropicKey || "",
+                    "anthropic-version": "2023-06-01"
+                },
+                body: JSON.stringify({
+                    model: "claude-haiku-4-5-20251001",
+                    max_tokens: 500,
+                    system: "Tu es O-TECH BOT, un assistant IA créé par Orlando Tech pour WhatsApp. Réponds de façon concise, en français ou en créole haïtien selon la langue de l'utilisateur. Sois direct et utile.",
+                    messages: [{ role: "user", content: question }]
+                })
+            });
+            const data = await res.json();
+            const answer = data.content?.[0]?.text || "❌ Pas de réponse.";
+            await reply(sock, from,
+                `🤖 *O-TECH IA*\n\n❓ _${question}_\n\n━━━━━━━━━━━━━━\n\n${answer}\n\n━━━━━━━━━━━━━━\n_Powered by O-TECH_ ⚡`, msg);
+        } catch (e) {
+            await reply(sock, from, `❌ IA indisponible. Configure la clé API dans CONFIG.anthropicKey`, msg);
+        }
+    },
+
+    aikey: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!args[0]) return reply(sock, from, "❌ Usage: .aikey sk-ant-XXXXX", msg);
+        CONFIG.anthropicKey = args[0];
+        await reply(sock, from, "✅ Clé API IA enregistrée!", msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   🎵 MENU MUSIQUE / YOUTUBE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ytb: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from,
+            `🎵 *YouTube Search*\n\nUsage: *.ytb nom de la chanson*\n\nEx: _.ytb Rihanna Umbrella_`, msg);
+        const query = encodeURIComponent(args.join(" "));
+        const searchUrl = `https://www.youtube.com/results?search_query=${query}`;
+        await reply(sock, from,
+            `🎵 *Résultat YouTube*\n\n` +
+            `🔍 Recherche: *${args.join(" ")}*\n\n` +
+            `🔗 ${searchUrl}\n\n` +
+            `_Copie ce lien dans YouTube pour écouter_ 🎶`, msg);
+    },
+
+    musique: async (sock, from, msg, args) => {
+        const p = CONFIG.prefix;
+        await reply(sock, from,
+            `┏━━━━━━━━━━━━━━━━━━━━━━┓\n` +
+            `┃  🎵 *MENU MUSIQUE*   ┃\n` +
+            `┗━━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
+            `› ${p}ytb *[chanson]* — Chercher sur YouTube\n` +
+            `› ${p}paroles *[chanson]* — Trouver les paroles\n` +
+            `› ${p}playlist — Playlist O-TECH recommandée\n` +
+            `› ${p}radio — Liens radios haïtiennes\n\n` +
+            `_Ex: .ytb Drake God's Plan_\n\n` +
+            `_O-TECH BOT 🎶_`, msg);
+    },
+
+    paroles: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .paroles nom artiste - chanson", msg);
+        const query = encodeURIComponent(args.join(" ") + " lyrics");
+        await reply(sock, from,
+            `🎤 *Paroles — ${args.join(" ")}*\n\n` +
+            `🔗 https://www.google.com/search?q=${query}\n\n` +
+            `_Clique pour trouver les paroles_ 🎵`, msg);
+    },
+
+    playlist: async (sock, from, msg) => {
+        await reply(sock, from,
+            `🎵 *Playlist O-TECH Recommandée*\n\n` +
+            `🔥 *Trap / Hip-Hop*\n` +
+            `▸ Drake, Travis Scott, Future\n\n` +
+            `🌴 *Kompa / Haïti*\n` +
+            `▸ T-Vice, Harmonik, Carimi\n\n` +
+            `💫 *Afrobeats*\n` +
+            `▸ Burna Boy, Wizkid, Davido\n\n` +
+            `🎶 *R&B*\n` +
+            `▸ The Weeknd, SZA, Giveon\n\n` +
+            `_Tape .ytb + nom artiste pour chercher_ 🚀`, msg);
+    },
+
+    radio: async (sock, from, msg) => {
+        await reply(sock, from,
+            `📻 *Radios Haïtiennes en ligne*\n\n` +
+            `🔴 *Radio Caraïbes FM*\n` +
+            `▸ https://radiocaraibesfm.com\n\n` +
+            `🔵 *Radio Metropole*\n` +
+            `▸ https://www.metropolehaiti.com\n\n` +
+            `🟢 *Radio Scoop FM*\n` +
+            `▸ https://radioscoopfm.com\n\n` +
+            `🟡 *HBN Radio*\n` +
+            `▸ https://hbnradio.com\n\n` +
+            `_Klike pou koute an dirèk_ 🎶`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   👑 MENU ADMIN OWNER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    admin: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const p = CONFIG.prefix;
+        const u = process.uptime();
+        const h = Math.floor(u / 3600), m = Math.floor((u % 3600) / 60), s = Math.floor(u % 60);
+        await sendImg(sock, from, ANON_IMG,
+            `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n` +
+            `┃  👑 *PANEL OWNER O-TECH* ┃\n` +
+            `┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
+            `⚙️ *Statut Bot*\n` +
+            `▸ Mode: *${CONFIG.mode}*\n` +
+            `▸ Uptime: *${h}h ${m}m ${s}s*\n` +
+            `▸ Cmds: *${Object.keys(commands).length}*\n` +
+            `▸ IA Key: *${CONFIG.anthropicKey ? "✅ Configurée" : "❌ Non configurée"}*\n\n` +
+            `╔══════════════════════╗\n` +
+            `║  🔧 *CONTRÔLE BOT*   ║\n` +
+            `╚══════════════════════╝\n` +
+            `› ${p}public — Mode tout le monde\n` +
+            `› ${p}prive — Mode privé seulement\n` +
+            `› ${p}grouponly — Mode groupes seulement\n` +
+            `› ${p}aikey [clé] — Configurer clé IA\n` +
+            `› ${p}broadcast [msg] — Message tous groupes\n` +
+            `› ${p}listgroups — Voir tous les groupes\n` +
+            `› ${p}banuser @user — Bannir un user du bot\n` +
+            `› ${p}unbanuser @user — Débannir\n` +
+            `› ${p}clearstats — Reset stats\n\n` +
+            `_Panel Owner — O-TECH © 2026_ 👑`, msg);
+    },
+
+    broadcast: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!args.length) return reply(sock, from, "❌ Usage: .broadcast ton message", msg);
+        const broadMsg = args.join(" ");
+        const groups = await sock.groupFetchAllParticipating();
+        const groupIds = Object.keys(groups);
+        if (!groupIds.length) return reply(sock, from, "❌ Aucun groupe trouvé.", msg);
+        await reply(sock, from, `📡 Envoi du broadcast à *${groupIds.length}* groupes...`, msg);
+        let sent = 0;
+        for (const gid of groupIds) {
+            try {
+                await sock.sendMessage(gid, {
+                    text: `📢 *BROADCAST O-TECH BOT*\n\n${broadMsg}\n\n_— Mr. Orlando_ 👑`
+                });
+                sent++;
+                await wait(500);
+            } catch (_) {}
+        }
+        await reply(sock, from, `✅ Broadcast envoyé à *${sent}/${groupIds.length}* groupes!`, msg);
+    },
+
+    listgroups: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const groups = await sock.groupFetchAllParticipating();
+        const list = Object.values(groups);
+        if (!list.length) return reply(sock, from, "❌ Aucun groupe.", msg);
+        let text = `👥 *Groupes O-TECH BOT* (${list.length})\n\n`;
+        for (let i = 0; i < list.length; i++) {
+            text += `${i + 1}. *${list[i].subject}*\n`;
+            text += `   └ ${list[i].participants.length} membres\n`;
+        }
+        await reply(sock, from, text, msg);
+    },
+
+    banuser: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .banuser @user", msg);
+        if (!CONFIG.bannedUsers) CONFIG.bannedUsers = [];
+        for (const jid of mentioned) {
+            if (!CONFIG.bannedUsers.includes(jid)) CONFIG.bannedUsers.push(jid);
+        }
+        await reply(sock, from, `🚫 *${mentioned.length}* user(s) banni(s) du bot!`, msg);
+    },
+
+    unbanuser: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .unbanuser @user", msg);
+        if (!CONFIG.bannedUsers) CONFIG.bannedUsers = [];
+        CONFIG.bannedUsers = CONFIG.bannedUsers.filter(j => !mentioned.includes(j));
+        await reply(sock, from, `✅ *${mentioned.length}* user(s) débanni(s)!`, msg);
+    },
+
+    clearstats: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        groupMsgStats.clear();
+        coinsData.clear();
+        xpData.clear();
+        await reply(sock, from, "🗑️ *Stats, coins et XP réinitialisés!*", msg);
+    },
+
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1260,6 +1478,9 @@ async function handleMessage(sock, m) {
     if (CONFIG.mode === "group" && !inGroup) return;
     if (CONFIG.mode === "private" && inGroup) return;
 
+    // Vérifier si user banni du bot
+    if (CONFIG.bannedUsers?.includes(sender) && !isOwner(sender)) return;
+
     const blocked = await runSecurityChecks(sock, from, msg, sender, body);
     if (blocked) return;
 
@@ -1296,9 +1517,21 @@ async function handleMessage(sock, m) {
 
     if (handler) {
         try {
+            // ⚡ RÉACTION automatique dès que la commande est reçue
+            const reactEmojis = ["⚡","🤖","🔥","✅","💫","🚀","⚙️","💥","🎯","👑"];
+            try {
+                await sock.sendMessage(from, {
+                    react: { text: randomChoice(reactEmojis), key: msg.key }
+                });
+            } catch (_) {}
+
             await handler(sock, from, msg, args, sender);
         } catch (err) {
             console.error(`[ERREUR] .${commandName}:`, err.message);
+            // Réaction erreur
+            try {
+                await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
+            } catch (_) {}
             await reply(sock, from, `❌ Erreur lors de l'exécution de *.${commandName}*`, msg);
         }
     }
