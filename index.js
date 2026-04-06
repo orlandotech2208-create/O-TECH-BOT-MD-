@@ -1361,6 +1361,424 @@ const commands = {
         await reply(sock, from, `✅ *${mentioned.length}* user(s) débanni(s)!`, msg);
     },
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   ⚙️ UTILS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    fancy: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .fancy ton texte", msg);
+        const normal = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const fancy  = "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵";
+        let result = "";
+        for (const c of args.join(" ")) {
+            const i = normal.indexOf(c);
+            result += i !== -1 ? [...fancy][i] : c;
+        }
+        await reply(sock, from, result, msg);
+    },
+
+    setpp: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const type = getContentType(msg.message);
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        const imgMsg = quoted?.imageMessage || (type === "imageMessage" ? msg.message.imageMessage : null);
+        if (!imgMsg) return reply(sock, from, "❌ Réponds à une image avec .setpp", msg);
+        try {
+            const buf = await downloadMedia(imgMsg, "image");
+            await sock.updateProfilePicture(isGroup(from) ? from : sock.user.id, { img: buf });
+            await reply(sock, from, "✅ Photo de profil mise à jour!", msg);
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    getpp: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || sender;
+        try {
+            const ppUrl = await sock.profilePictureUrl(target, "image");
+            const res = await fetch(ppUrl);
+            const buf = Buffer.from(await res.arrayBuffer());
+            await sock.sendMessage(from, {
+                image: buf,
+                caption: `🖼️ *PP de* @${shortNum(target)}`,
+                mentions: [target]
+            }, { quoted: msg });
+        } catch (_) {
+            await reply(sock, from, "❌ Pas de photo de profil disponible.", msg);
+        }
+    },
+
+    setprefix: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!args[0]) return reply(sock, from, "❌ Usage: .setprefix !", msg);
+        CONFIG.prefix = args[0];
+        await reply(sock, from, `✅ Préfixe changé en: *${CONFIG.prefix}*`, msg);
+    },
+
+    autotype: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.autoType = !CONFIG.autoType;
+        await reply(sock, from, `⌨️ Auto-typing: *${CONFIG.autoType ? "ON" : "OFF"}*`, msg);
+    },
+
+    autorecord: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.autoRecord = !CONFIG.autoRecord;
+        await reply(sock, from, `🎙️ Auto-recording: *${CONFIG.autoRecord ? "ON" : "OFF"}*`, msg);
+    },
+
+    public: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        CONFIG.mode = CONFIG.mode === "both" ? "private" : "both";
+        await reply(sock, from, `🌐 Mode: *${CONFIG.mode === "both" ? "PUBLIC" : "PRIVÉ"}*`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   👑 OWNER / SUDO
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    sudo: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .sudo @user", msg);
+        if (!CONFIG.sudoUsers) CONFIG.sudoUsers = [];
+        for (const jid of mentioned) {
+            if (!CONFIG.sudoUsers.includes(jid)) CONFIG.sudoUsers.push(jid);
+        }
+        await sock.sendMessage(from, {
+            text: `✅ *Sudo ajouté!*
+@${shortNum(mentioned[0])} peut maintenant utiliser les commandes admin.`,
+            mentions: mentioned
+        }, { quoted: msg });
+    },
+
+    delsudo: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .delsudo @user", msg);
+        CONFIG.sudoUsers = (CONFIG.sudoUsers || []).filter(j => !mentioned.includes(j));
+        await reply(sock, from, `✅ Sudo retiré!`, msg);
+    },
+
+    addprem: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .addprem @user", msg);
+        if (!CONFIG.premiumUsers) CONFIG.premiumUsers = [];
+        for (const jid of mentioned) {
+            if (!CONFIG.premiumUsers.includes(jid)) CONFIG.premiumUsers.push(jid);
+        }
+        await sock.sendMessage(from, {
+            text: `💎 *Premium activé!*
+@${shortNum(mentioned[0])} est maintenant *Premium* 🌟`,
+            mentions: mentioned
+        }, { quoted: msg });
+    },
+
+    delprem: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .delprem @user", msg);
+        CONFIG.premiumUsers = (CONFIG.premiumUsers || []).filter(j => !mentioned.includes(j));
+        await reply(sock, from, `✅ Premium retiré!`, msg);
+    },
+
+    test: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        await reply(sock, from,
+            `🧪 *TEST O-TECH BOT*\n\n` +
+            `✅ Socket: Online\n` +
+            `✅ Prefix: ${CONFIG.prefix}\n` +
+            `✅ Mode: ${CONFIG.mode}\n` +
+            `✅ Node: ${process.version}\n` +
+            `✅ RAM: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB\n` +
+            `✅ Uptime: ${Math.floor(process.uptime())}s`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   👥 GROUP AVANCÉ
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    kickall: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta = await sock.groupMetadata(from);
+        const members = meta.participants.filter(p => !p.admin && !isOwner(p.id));
+        await reply(sock, from, `⏳ Expulsion de *${members.length}* membres...`, msg);
+        for (const m of members) {
+            try { await sock.groupParticipantsUpdate(from, [m.id], "remove"); await wait(500); } catch (_) {}
+        }
+        await reply(sock, from, `✅ *${members.length}* membres expulsés!`, msg);
+    },
+
+    kickall2: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta = await sock.groupMetadata(from);
+        const members = meta.participants.filter(p => !isOwner(p.id));
+        await reply(sock, from, `⏳ Expulsion TOTALE de *${members.length}* membres...`, msg);
+        for (const m of members) {
+            try { await sock.groupParticipantsUpdate(from, [m.id], "remove"); await wait(300); } catch (_) {}
+        }
+        await reply(sock, from, `✅ Groupe vidé!`, msg);
+    },
+
+    promoteall: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta = await sock.groupMetadata(from);
+        const members = meta.participants.filter(p => !p.admin);
+        for (const m of members) {
+            try { await sock.groupParticipantsUpdate(from, [m.id], "promote"); await wait(400); } catch (_) {}
+        }
+        await reply(sock, from, `✅ *${members.length}* membres promus admins!`, msg);
+    },
+
+    demoteall: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta = await sock.groupMetadata(from);
+        const admins = meta.participants.filter(p => p.admin && !isOwner(p.id));
+        for (const a of admins) {
+            try { await sock.groupParticipantsUpdate(from, [a.id], "demote"); await wait(400); } catch (_) {}
+        }
+        await reply(sock, from, `✅ *${admins.length}* admins rétrogradés!`, msg);
+    },
+
+    gclink: async (sock, from, msg, args, sender) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        try {
+            const code = await sock.groupInviteCode(from);
+            await reply(sock, from, `🔗 https://chat.whatsapp.com/${code}`, msg);
+        } catch (_) {
+            await reply(sock, from, "❌ Le bot doit être admin.", msg);
+        }
+    },
+
+    bye: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        await reply(sock, from, "👋 *O-TECH BOT quitte le groupe. Au revoir!*", msg);
+        await wait(1000);
+        await sock.groupLeave(from);
+    },
+
+    join: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!args[0]) return reply(sock, from, "❌ Usage: .join https://chat.whatsapp.com/XXXXX", msg);
+        const code = args[0].replace("https://chat.whatsapp.com/", "");
+        try {
+            await sock.groupAcceptInvite(code);
+            await reply(sock, from, "✅ Groupe rejoint!", msg);
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   😶‍🌫️ MODÉRATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    block: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .block @user", msg);
+        for (const jid of mentioned) {
+            try { await sock.updateBlockStatus(jid, "block"); } catch (_) {}
+        }
+        await reply(sock, from, `🚫 *${mentioned.length}* user(s) bloqué(s)!`, msg);
+    },
+
+    unblock: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .unblock @user", msg);
+        for (const jid of mentioned) {
+            try { await sock.updateBlockStatus(jid, "unblock"); } catch (_) {}
+        }
+        await reply(sock, from, `✅ *${mentioned.length}* user(s) débloqué(s)!`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   🐞 BUG COMMANDS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    close: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || from;
+        const bugText = "‎".repeat(1000) + "​".repeat(1000);
+        for (let i = 0; i < 3; i++) {
+            await sock.sendMessage(target, { text: bugText });
+            await wait(300);
+        }
+        await reply(sock, from, "💥 Close envoyé!", msg);
+    },
+
+    kill: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || from;
+        const invisible = "​".repeat(5000);
+        for (let i = 0; i < 5; i++) {
+            await sock.sendMessage(target, { text: invisible });
+            await wait(200);
+        }
+        await reply(sock, from, "💀 Kill envoyé!", msg);
+    },
+
+    fuck: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0] || from;
+        const chars = ["꧁", "꧂", "⚠", "🔴", "💢", "⛔", "🚨"];
+        for (let i = 0; i < 10; i++) {
+            const c = chars[i % chars.length].repeat(300);
+            await sock.sendMessage(target, { text: c });
+            await wait(150);
+        }
+        await reply(sock, from, "🔥 Fuck envoyé!", msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   📸 MEDIA AVANCÉ
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    toaudio: async (sock, from, msg, args, sender) => {
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        if (!quoted?.videoMessage) return reply(sock, from, "❌ Réponds à une vidéo avec .toaudio", msg);
+        try {
+            const buf = await downloadMedia(quoted.videoMessage, "video");
+            await sock.sendMessage(from, {
+                audio: buf,
+                mimetype: "audio/mp4",
+                ptt: false
+            }, { quoted: msg });
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    url: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .url https://ton-lien.com", msg);
+        const link = args[0];
+        await sock.sendMessage(from, {
+            text: link,
+            linkPreview: true
+        }, { quoted: msg });
+    },
+
+    img: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .img mot-clé", msg);
+        const query = args.join(" ");
+        const urls = [
+            `https://source.unsplash.com/800x600/?${encodeURIComponent(query)}`,
+        ];
+        try {
+            const res = await fetch(randomChoice(urls));
+            const buf = Buffer.from(await res.arrayBuffer());
+            await sock.sendMessage(from, {
+                image: buf,
+                caption: `🖼️ *${query}*`
+            }, { quoted: msg });
+        } catch (_) {
+            await reply(sock, from, "❌ Image introuvable.", msg);
+        }
+    },
+
+    tiktok: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .tiktok https://vm.tiktok.com/XXXXX", msg);
+        await reply(sock, from,
+            `🎵 *TikTok Downloader*\n\n` +
+            `Lien: ${args[0]}\n\n` +
+            `_Utilise snaptik.app ou tikmate.online pour télécharger sans watermark_ 📥`, msg);
+    },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   💬 FAKE CHAT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    chat: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length || args.length < 2) {
+            return reply(sock, from, "❌ Usage: .chat @user message", msg);
+        }
+        const target = mentioned[0];
+        const texte = args.filter(a => !a.startsWith("@") && !/^[0-9]+$/.test(a)).join(" ");
+        if (!texte.trim()) return reply(sock, from, "❌ Écris un message.", msg);
+        try {
+            await sock.sendMessage(from, {
+                text: texte,
+                mentions: [target],
+            }, {
+                quoted: {
+                    key: { remoteJid: from, fromMe: false, id: msg.key.id, participant: target },
+                    message: { extendedTextMessage: { text: texte } }
+                }
+            });
+            try {
+                await sock.sendMessage(from, {
+                    delete: { remoteJid: from, fromMe: false, id: msg.key.id, participant: sender }
+                });
+            } catch (_) {}
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    fchat: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length || args.length < 2) {
+            return reply(sock, from, "❌ Usage: .fchat @user message", msg);
+        }
+        const target = mentioned[0];
+        const texte = args.filter(a => !a.startsWith("@") && !/^[0-9]+$/.test(a)).join(" ");
+        if (!texte.trim()) return reply(sock, from, "❌ Écris un message.", msg);
+        try {
+            await sock.sendMessage(from, {
+                text: `_Transféré de @${shortNum(target)}_\n\n${texte}`,
+                mentions: [target],
+            });
+            try {
+                await sock.sendMessage(from, {
+                    delete: { remoteJid: from, fromMe: false, id: msg.key.id, participant: sender }
+                });
+            } catch (_) {}
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    typechat: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length || args.length < 2) {
+            return reply(sock, from, "❌ Usage: .typechat @user message", msg);
+        }
+        const target = mentioned[0];
+        const texte = args.filter(a => !a.startsWith("@") && !/^[0-9]+$/.test(a)).join(" ");
+        if (!texte.trim()) return reply(sock, from, "❌ Écris un message.", msg);
+        try {
+            await sock.sendPresenceUpdate("composing", from);
+            await wait(2000);
+            await sock.sendPresenceUpdate("paused", from);
+            await sock.sendMessage(from, { text: texte, mentions: [target] }, {
+                quoted: {
+                    key: { remoteJid: from, fromMe: false, id: "0", participant: target },
+                    message: { conversation: texte }
+                }
+            });
+            try {
+                await sock.sendMessage(from, {
+                    delete: { remoteJid: from, fromMe: false, id: msg.key.id, participant: sender }
+                });
+            } catch (_) {}
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
     clearstats: async (sock, from, msg, args, sender) => {
         if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
         groupMsgStats.clear();
