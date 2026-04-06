@@ -1,5 +1,4 @@
-const {
-    default: makeWASocket,
+import makeWASocket, {
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
@@ -7,11 +6,14 @@ const {
     downloadContentFromMessage,
     areJidsSameUser,
     makeCacheableSignalKeyStore,
-} = require("@whiskeysockets/baileys");
-const pino = require("pino");
-const readline = require("readline");
-const fs = require("fs");
-const path = require("path");
+} from "baileys";
+import pino from "pino";
+import readline from "readline";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //   IMAGE ANONYMOUS (chargée depuis fichier local)
