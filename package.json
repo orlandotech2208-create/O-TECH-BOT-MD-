@@ -1,11 +1,11 @@
 {
   "name": "otech-bot",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "O-TECH BOT WhatsApp — by Orlando Tech",
-  "main": "index.mjs",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.mjs"
+    "start": "node index.js"
   },
   "dependencies": {
     "baileys": "latest",
