@@ -1157,9 +1157,186 @@ const commands = {
         if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
         const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
         const target = mentioned[0] || from;
-        const chars = ["\u{F0001}","\u{F0002}","⚠","🔴","💢","⛔","🚨"];
+        const chars = ["꧁","꧂","⚠","🔴","💢","⛔","🚨"];
         for (let i = 0; i < 10; i++) { await sock.sendMessage(target, { text: chars[i%chars.length].repeat(300) }); await wait(150); }
     },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   📢 BROADCAST & CONTACTS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // .broadcast — envoyer un message a tous les membres de TOUS les groupes
+    broadcast: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const texte = args.join(" ");
+        if (!texte) return reply(sock, from, "❌ Usage: .broadcast ton message", msg);
+
+        await reply(sock, from, "📢 Broadcast en cours...", msg);
+
+        let sent = 0, failed = 0;
+        try {
+            // Récupérer tous les groupes
+            const groups = await sock.groupFetchAllParticipating();
+            const groupIds = Object.keys(groups);
+
+            for (const groupId of groupIds) {
+                const meta = groups[groupId];
+                const members = meta.participants.map(p => p.id);
+                const mentions = members;
+
+                let text = `📢 *BROADCAST O-TECH*
+
+${texte}
+
+_— ${CONFIG.botName}_`;
+
+                try {
+                    await sock.sendMessage(groupId, { text, mentions });
+                    sent++;
+                    await wait(500);
+                } catch (_) { failed++; }
+            }
+
+            await reply(sock, from,
+                `✅ *Broadcast terminé!*
+
+` +
+                `📤 Envoyé: *${sent} groupes*
+` +
+                `❌ Échoué: *${failed}*`, msg);
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur broadcast: ${e.message}`, msg);
+        }
+    },
+
+    // .broadcastgroup — envoyer dans le groupe actuel seulement avec tag de tous
+    broadcastgroup: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const texte = args.join(" ");
+        if (!texte) return reply(sock, from, "❌ Usage: .broadcastgroup ton message", msg);
+
+        const meta = await sock.groupMetadata(from);
+        const members = meta.participants.map(p => p.id);
+        let text = `📢 *BROADCAST O-TECH*
+
+${texte}
+
+`;
+        for (const m of members) text += `@${shortNum(m)} `;
+
+        await sock.sendMessage(from, { text, mentions: members }, { quoted: msg });
+    },
+
+    // .contacts — lister tous les contacts WhatsApp sans les chercher
+    contacts: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+
+        await reply(sock, from, "⏳ Récupération des contacts...", msg);
+
+        try {
+            // Récupérer depuis tous les groupes (membres = contacts)
+            const groups = await sock.groupFetchAllParticipating();
+            const allContacts = new Map();
+
+            for (const groupId of Object.keys(groups)) {
+                const meta = groups[groupId];
+                for (const p of meta.participants) {
+                    if (!allContacts.has(p.id) && !isOwner(p.id)) {
+                        allContacts.set(p.id, { jid: p.id, name: shortNum(p.id) });
+                    }
+                }
+            }
+
+            // Essayer de récupérer les noms
+            const contactList = [...allContacts.values()];
+            let text = `📋 *Contacts WhatsApp*
+_${contactList.length} contacts trouvés_
+
+`;
+            const mentions = contactList.map(c => c.jid);
+
+            // Afficher par batch de 50 max
+            const batch = contactList.slice(0, 50);
+            for (let i = 0; i < batch.length; i++) {
+                text += `${i+1}. @${shortNum(batch[i].jid)}
+`;
+            }
+
+            if (contactList.length > 50) {
+                text += `
+_...et ${contactList.length - 50} autres_`;
+            }
+
+            await sock.sendMessage(from, { text, mentions: batch.map(c => c.jid) }, { quoted: msg });
+
+            // Si plus de 50, envoyer les suivants
+            if (contactList.length > 50) {
+                await wait(1000);
+                let text2 = `📋 *Contacts (suite)*
+
+`;
+                const batch2 = contactList.slice(50, 100);
+                for (let i = 0; i < batch2.length; i++) {
+                    text2 += `${i+51}. @${shortNum(batch2[i].jid)}
+`;
+                }
+                await sock.sendMessage(from, { text: text2, mentions: batch2.map(c => c.jid) }, { quoted: msg });
+            }
+
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
+    // .sendall — envoyer un message prive a tous tes contacts des groupes
+    sendall: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const texte = args.join(" ");
+        if (!texte) return reply(sock, from, "❌ Usage: .sendall ton message", msg);
+
+        await reply(sock, from, "📤 Envoi en cours à tous les contacts...", msg);
+
+        try {
+            const groups = await sock.groupFetchAllParticipating();
+            const allContacts = new Set();
+
+            for (const groupId of Object.keys(groups)) {
+                const meta = groups[groupId];
+                for (const p of meta.participants) {
+                    if (!isOwner(p.id)) allContacts.add(p.id);
+                }
+            }
+
+            let sent = 0, failed = 0;
+            for (const jid of allContacts) {
+                try {
+                    await sock.sendMessage(jid, {
+                        text: `📢 *Message de O-TECH BOT*
+
+${texte}
+
+_— ${CONFIG.owner}_`
+                    });
+                    sent++;
+                    await wait(800); // éviter le ban
+                } catch (_) { failed++; }
+            }
+
+            await reply(sock, from,
+                `✅ *Envoi terminé!*
+
+` +
+                `📤 Envoyé: *${sent}*
+` +
+                `❌ Échoué: *${failed}*
+` +
+                `👥 Total: *${allContacts.size}*`, msg);
+        } catch (e) {
+            await reply(sock, from, `❌ Erreur: ${e.message}`, msg);
+        }
+    },
+
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1271,7 +1448,7 @@ async function startOTechBot() {
     if (!state.creds.registered) {
         phoneNumber = await question("📱 Ton numero (ex: 50935443504): ");
         phoneNumber = phoneNumber.replace(/[^0-9]/g, "");
-        console.log("⏳ Creation du socket...");
+        console.log("⏳ Connexion...");
     }
 
     const sock = makeWASocket({
@@ -1282,7 +1459,7 @@ async function startOTechBot() {
         },
         printQRInTerminal: false,
         logger: pino({ level: "silent" }),
-        browser: ["O-TECH BOT", "Chrome", "4.1.0"],
+        browser: ["Windows", "Chrome", "10.0"],
         connectTimeoutMs: 60_000,
         keepAliveIntervalMs: 25_000,
         syncFullHistory: false,
@@ -1290,32 +1467,34 @@ async function startOTechBot() {
         getMessage: async () => undefined,
     });
 
-    // FIX: le code doit etre demande dans connection.update quand "connecting"
-    let pairingDone = false;
+    // Pairing code APRES creation socket + attente stabilisation
+    if (phoneNumber && !state.creds.registered) {
+        await wait(3000);
+        let tries = 3;
+        while (tries > 0) {
+            try {
+                const code = await sock.requestPairingCode(phoneNumber);
+                const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
+                console.log("\n╔══════════════════════════════════╗");
+                console.log("║   🚀 O-TECH BOT — CODE JUMELAGE  ║");
+                console.log(`║          >>>  ${fmt}  <<<          ║`);
+                console.log("╚══════════════════════════════════╝");
+                console.log("\n👉 WhatsApp → Appareils connectes");
+                console.log("👉 Connecter avec un numero de telephone");
+                console.log(`👉 Entre le code: ${fmt}\n`);
+                break;
+            } catch (e) {
+                tries--;
+                console.log(`⚠️ Retry... (${e.message})`);
+                if (tries === 0) { console.log("❌ Supprime session_otech/ et relance."); process.exit(1); }
+                await wait(3000);
+            }
+        }
+    }
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
-        // Demander le code au bon moment
         if (connection === "connecting") {
-            console.log("🔄 Connexion...");
-            if (phoneNumber && !state.creds.registered && !pairingDone) {
-                pairingDone = true;
-                await wait(2000);
-                try {
-                    const code = await sock.requestPairingCode(phoneNumber);
-                    const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
-                    console.log("\n╔══════════════════════════════════╗");
-                    console.log("║   🚀 O-TECH BOT — CODE JUMELAGE  ║");
-                    console.log(`║          >>>  ${fmt}  <<<          ║`);
-                    console.log("╚══════════════════════════════════╝");
-                    console.log("\n👉 WhatsApp → Appareils connectes");
-                    console.log("👉 Connecter avec un numero de telephone");
-                    console.log(`👉 Entre le code: ${fmt}\n`);
-                } catch (e) {
-                    console.log(`❌ Erreur code: ${e.message}`);
-                    console.log("💡 Supprime session_otech/ et relance.");
-                    process.exit(1);
-                }
-            }
+            console.log("🔄 Connexion en cours...");
         }
         if (connection === "open") {
             console.log(`\n✅ ${CONFIG.botName} EST EN LIGNE!`);
