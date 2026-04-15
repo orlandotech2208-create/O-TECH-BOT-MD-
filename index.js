@@ -1290,31 +1290,33 @@ async function startOTechBot() {
         getMessage: async () => undefined,
     });
 
-    if (phoneNumber && !state.creds.registered) {
-        await wait(3000);
-        let tries = 3;
-        while (tries > 0) {
-            try {
-                const code = await sock.requestPairingCode(phoneNumber);
-                const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
-                console.log("\n╔══════════════════════════════════╗");
-                console.log("║   🚀 O-TECH BOT — CODE JUMELAGE  ║");
-                console.log(`║          >>>  ${fmt}  <<<          ║`);
-                console.log("╚══════════════════════════════════╝");
-                console.log("\n👉 WhatsApp → Appareils connectes → Connecter avec un numero");
-                console.log(`👉 Entre le code: ${fmt}\n`);
-                break;
-            } catch (e) {
-                tries--;
-                console.log(`Tentative echouee: ${e.message}`);
-                if (tries === 0) { console.log("❌ Impossible. Supprime session_otech/ et relance."); process.exit(1); }
-                await wait(3000);
-            }
-        }
-    }
+    // FIX: le code doit etre demande dans connection.update quand "connecting"
+    let pairingDone = false;
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
-        if (connection === "connecting") console.log("🔄 Connexion...");
+        // Demander le code au bon moment
+        if (connection === "connecting") {
+            console.log("🔄 Connexion...");
+            if (phoneNumber && !state.creds.registered && !pairingDone) {
+                pairingDone = true;
+                await wait(2000);
+                try {
+                    const code = await sock.requestPairingCode(phoneNumber);
+                    const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
+                    console.log("\n╔══════════════════════════════════╗");
+                    console.log("║   🚀 O-TECH BOT — CODE JUMELAGE  ║");
+                    console.log(`║          >>>  ${fmt}  <<<          ║`);
+                    console.log("╚══════════════════════════════════╝");
+                    console.log("\n👉 WhatsApp → Appareils connectes");
+                    console.log("👉 Connecter avec un numero de telephone");
+                    console.log(`👉 Entre le code: ${fmt}\n`);
+                } catch (e) {
+                    console.log(`❌ Erreur code: ${e.message}`);
+                    console.log("💡 Supprime session_otech/ et relance.");
+                    process.exit(1);
+                }
+            }
+        }
         if (connection === "open") {
             console.log(`\n✅ ${CONFIG.botName} EST EN LIGNE!`);
             console.log(`▸ Prefixe: ${CONFIG.prefix} | Mode: ${CONFIG.mode} | Cmds: ${Object.keys(commands).length}\n`);
