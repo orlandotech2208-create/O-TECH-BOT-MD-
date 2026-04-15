@@ -1,186 +1,208 @@
-# 🤖 O-TECH BOT MD
+# 🤖 O-TECH BOT v4.1
+**by Orlando Tech 🇭🇹 — otech.ht**
 
-<div align="center">
-
-![O-TECH BOT](https://img.shields.io/badge/O--TECH-BOT-blue?style=for-the-badge&logo=whatsapp)
-![Node.js](https://img.shields.io/badge/Node.js-v24+-green?style=for-the-badge&logo=node.js)
-![Baileys](https://img.shields.io/badge/Baileys-Latest-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-red?style=for-the-badge)
-
-**Bot WhatsApp premium créé par Orlando Tech 🇭🇹**
-
-</div>
+Bot WhatsApp multi-fonctions basé sur Baileys (ESM).  
+Fichier unique — compatible Termux Android.
 
 ---
 
-## ✨ Fonctionnalités
-
-- 🛠 **Modération** — kick, promote, demote, warn, mute, tag
-- 💰 **Économie** — coins, daily, work, pari, rob, transfert
-- 🎮 **Jeux** — quiz, pendu, devinette, rps, 8ball
-- 📊 **Stats** — top membres, leaderboard, scores
-- 🖼️ **Médias** — vv, send, sticker, pp, meme
-- 💬 **Fake Chat** — chat, fchat, typechat
-- 🛡️ **Sécurité** — antilink, antispam, antibadword, anti-quick
-- 🤖 **IA** — réponses intelligentes via Claude
-- 🎵 **Musique** — recherche YouTube
-- 👋 **Welcome/Bye** — avec photo de profil automatique
-
----
-
-## ⚙️ Installation
-
-### Prérequis
-- Termux (Android)
-- Node.js v24+
-- Compte WhatsApp actif
-
-### Étapes
+## 📦 INSTALLATION RAPIDE (Termux)
 
 ```bash
-# 1. Cloner le repo
+pkg update && pkg upgrade -y
+pkg install nodejs git -y
 git clone https://github.com/orlandotech2208-create/O-TECH-BOT-MD- otech-bot
 cd otech-bot
-
-# 2. Installer les dépendances
 npm install
-
-# 3. Copier l'image du bot
-cp /storage/emulated/0/Download/anon.jpg ./anon.jpg
-
-# 4. Lancer
 node index.js
 ```
 
+Rentre ton numéro quand demandé → va dans WhatsApp → Appareils connectés → entre le code.
+
 ---
 
-## 📋 Commandes
+## ⚙️ CONFIG
 
-### 📋 Info
+Ouvre `index.js` et modifie le bloc `CONFIG` :
+
+| Paramètre     | Description                        |
+|---------------|------------------------------------|
+| `ownerNumber` | Ton numéro sans + (ex: 50935443504)|
+| `prefix`      | Préfixe des commandes (défaut: `.`)|
+| `mode`        | `both` / `group` / `private`       |
+| `sessionName` | Dossier de session Baileys         |
+
+---
+
+## 📋 COMMANDES
+
+### 📋 INFO
 | Commande | Description |
 |----------|-------------|
-| `.menu` | Afficher le menu |
-| `.ping` | Tester la connexion |
-| `.botinfo` | Infos du bot |
-| `.uptime` | Temps en ligne |
-| `.owner` | Contact owner |
+| `.menu` | Affiche le menu complet |
+| `.ping` | Test la vitesse du bot |
+| `.botinfo` | Infos du bot (RAM, uptime...) |
+| `.uptime` | Durée de fonctionnement |
+| `.owner` | Contact de l'owner |
 
-### 🛠 Modération
+### 🛠 MODÉRATION (groupe, admin/owner)
 | Commande | Description |
 |----------|-------------|
-| `.kick @user` | Expulser un membre |
-| `.promote @user` | Rendre admin |
-| `.demote @user` | Retirer admin |
-| `.mute` | Fermer le groupe |
-| `.unmute` | Ouvrir le groupe |
-| `.warn @user` | Avertir (3 = kick) |
-| `.tag [msg]` | Mentionner tout le monde |
-| `.tagadmin` | Mentionner les admins |
-| `.kickall` | Expulser tous les membres |
-| `.promoteall` | Promouvoir tout le monde |
-| `.link` | Lien du groupe |
-| `.bye` | Bot quitte le groupe |
+| `.kick @user` | Expulse un membre |
+| `.add 509XXXXXXXX` | Ajoute un membre par numéro |
+| `.promote @user` | Promu admin |
+| `.demote @user` | Retire admin |
+| `.mute` | Ferme le groupe (admins only) |
+| `.unmute` | Ouvre le groupe |
+| `.warn @user` | Avertit (3 warns = kick auto) |
+| `.resetwarn @user` | Remet warns à 0 pour un user |
+| `.clearwarn` | Supprime TOUS les warns du groupe |
+| `.delete` | Supprime un message (réponds dessus) |
+| `.tag [message]` | Mentionne tous les membres |
+| `.tagadmin [message]` | Mentionne tous les admins |
+| `.admins` | Liste les admins |
+| `.groupinfo` | Infos du groupe |
+| `.link` | Lien d'invitation |
+| `.revoke` | Révoque le lien |
+| `.kickall` | Expulse tous les NON-admins |
+| `.kickall2` | Expulse TOUT le monde (sauf owner/bot) |
+| `.promoteall` | Promeut tous les membres admins |
+| `.demoteall` | Rétrograde tous les admins |
+| `.bye` | Le bot quitte le groupe |
+| `.join [lien]` | Le bot rejoint un groupe |
 
-### 💰 Économie
+### 📢 BROADCAST & CONTACTS (owner seulement)
 | Commande | Description |
 |----------|-------------|
-| `.daily` | Reward quotidien |
-| `.work` | Travailler (1h cooldown) |
-| `.solde` | Voir ses coins |
-| `.pari [montant]` | Parier |
-| `.rob @user` | Voler des coins |
-| `.transfert @user [montant]` | Envoyer des coins |
-| `.richesse` | Top 10 des plus riches |
+| `.broadcast message` | Envoie un DM à TOUS les membres du groupe |
+| `.contacts` | Exporte la liste des membres en fichier .txt |
+| `.listgroups` | Liste tous les groupes du bot → envoyé en DM |
 
-### 🎮 Jeux
+### 🛡 SÉCURITÉ
 | Commande | Description |
 |----------|-------------|
-| `.quiz` | Quiz aléatoire |
+| `.antilink on/off` | Active/désactive anti-lien |
+| `.antispam on/off` | Active/désactive anti-spam |
+| `.antibadword on/off` | Active/désactive anti-grossièretés |
+| `.block @user` | Bloque sur WhatsApp |
+| `.unblock @user` | Débloque |
+| `.ban @user` | Bannit du bot |
+| `.unban @user` | Dé-bannit du bot |
+
+### 💰 ÉCONOMIE
+| Commande | Description |
+|----------|-------------|
+| `.daily` | Récompense quotidienne (100-300 coins) |
+| `.work` | Travaille toutes les heures |
+| `.solde [@user]` | Voir son solde/niveau/XP |
+| `.pari [montant]` | Pari pile ou face |
+| `.rob @user` | Tente de voler un membre |
+| `.transfert @user montant` | Envoyer des coins |
+| `.richesse` | Top 10 les plus riches |
+
+### 🎮 JEUX
+| Commande | Description |
+|----------|-------------|
+| `.quiz` | Question aléatoire (30s) |
 | `.pendu` | Jeu du pendu |
-| `.devinette` | Devinette |
-| `.8ball [question]` | Boule magique |
-| `.rps pierre/feuille/ciseaux` | Pierre Feuille Ciseaux |
+| `.lettre X` | Proposer une lettre au pendu |
+| `.devinette` | Devinette (45s) |
+| `.8ball question` | Magic 8-Ball |
+| `.rps pierre/feuille/ciseaux` | Pierre-Feuille-Ciseaux |
+| `.pile` | Pile ou face |
+| `.de [faces]` | Lancer un dé |
+| `.compteur [1-10]` | Compte à rebours |
 | `.ship @user1 @user2` | Compatibilité amoureuse |
-| `.fight @user` | Combat |
+| `.hug @user` | Faire un câlin |
+| `.slap @user` | Gifler quelqu'un |
+| `.fight @user` | Combattre quelqu'un |
 
-### 📲 Médias
+### 📊 STATS
 | Commande | Description |
 |----------|-------------|
-| `.vv` | Voir un message view once |
-| `.send` | Enregistrer un statut |
-| `.pp @user` | Photo de profil |
+| `.top` | Top 10 membres les plus actifs |
+| `.stats` | Stats du groupe |
+| `.monscore` | Ton score personnel |
+
+### 📲 MÉDIAS
+| Commande | Description |
+|----------|-------------|
+| `.vv` | Révèle un message view once |
+| `.send` | Renvoie un média/statut |
+| `.pp [@user]` | Photo de profil |
 | `.meme` | Meme aléatoire |
-| `.img [mot]` | Chercher une image |
+| `.img mot` | Image via Unsplash |
+| `.tiktok [lien]` | Lien TikTok downloader |
+| `.url [lien]` | Envoie un lien |
+| `.sticker` | Convertit en sticker (nécessite sharp) |
 
-### 💬 Fake Chat
+### 💬 FAKE CHAT
 | Commande | Description |
 |----------|-------------|
-| `.chat @user message` | Fake message |
-| `.fchat @user message` | Message transféré |
-| `.typechat @user message` | Simule typing |
+| `.chat @user message` | Message en citation de quelqu'un |
+| `.fchat @user message` | Message transféré fictif |
+| `.typechat @user message` | Typing effect puis envoie |
 
-### 🛡️ Sécurité
+### ⚙️ UTILS
 | Commande | Description |
 |----------|-------------|
-| `.antilink on/off` | Anti-lien |
-| `.antispam on/off` | Anti-spam |
-| `.antibadword on/off` | Anti-mauvais mots |
-| `.block @user` | Bloquer |
-| `.unblock @user` | Débloquer |
+| `.fancy texte` | Texte en gras stylisé |
+| `.tts texte` | Texte en majuscules |
+| `.calc expression` | Calculatrice |
+| `.blague` | Blague aléatoire |
+| `.quote` | Citation motivante |
+| `.conseil` | Conseil en créole/français |
+| `.profil [@user]` | Profil + photo |
+| `.setpp` | Change photo de profil (réponds à une image) |
+| `.setprefix !` | Change le préfixe |
+| `.public` | Bascule mode public/privé |
+| `.sudo @user` | Donne droits sudo |
+| `.addprem @user` | Ajoute un membre premium |
 
-### 👑 Owner
+### 🐞 BUG (owner seulement)
 | Commande | Description |
 |----------|-------------|
-| `.sudo @user` | Ajouter sudo |
-| `.addprem @user` | Ajouter premium |
-| `.setpp` | Changer photo profil |
-| `.setprefix [prefix]` | Changer le préfixe |
-| `.ban @user` | Bannir du bot |
-| `.broadcast [msg]` | Message à tous |
+| `.close [@user]` | Freeze la cible |
+| `.kill [@user]` | Spam invisible |
+| `.fuck [@user]` | Spam de caractères |
 
 ---
 
-## 🔧 Configuration
+## 🔧 BUGS CORRIGES (v4.0 → v4.1)
 
-Dans `index.js`, modifie le bloc `CONFIG` :
+| Bug | Fix |
+|-----|-----|
+| `package.json` pointait vers `index.mjs` au lieu de `index.js` | Corrigé dans `package.json` |
+| `CONFIG.sudoUsers` non défini → crash dans `isSudo()` | Maintenant initialisé à `[]` dans CONFIG |
+| Import `areJidsSameUser` inutilisé | Supprimé |
+| `.kickall` pouvait expulser le bot lui-même | Bot exclu avec `shortNum(botJid)` |
+| `.kickall2` pareil | Bot exclu aussi |
+| Commande `.dé` avec accent posait problème | Renommée `.de` |
+| Anti-kick ne prévenait pas l'owner | Alerte DM envoyée automatiquement |
 
-```js
-const CONFIG = {
-    botName: "O-TECH BOT",
-    owner: "Orlando Tech",
-    ownerNumber: "50935443504", // Ton numéro
-    prefix: ".",                // Préfixe des commandes
-    sessionName: "session_otech",
-    mode: "both",               // "group" | "private" | "both"
-};
+---
+
+## 📁 FICHIERS
+
+```
+otech-bot/
+├── index.js          ← Bot complet (fichier unique)
+├── package.json      ← Dépendances
+├── README.md         ← Ce fichier
+├── anon.jpg          ← Photo de profil du bot (optionnel)
+└── session_otech/    ← Créé automatiquement après connexion
 ```
 
 ---
 
-## 🚫 Anti-Quick
+## ⚠️ NOTES IMPORTANTES
 
-Pour bloquer des numéros spécifiques, ajoute-les dans :
-
-```js
-const QUICK_NUMBERS = [
-    "509XXXXXXXX", // Numéro à bloquer
-];
-```
+- **`.broadcast`** envoie en DM à chaque membre — utilise un délai de 1.5s entre chaque envoi pour éviter le ban WhatsApp.
+- **`.contacts`** crée un fichier `.txt` temporaire puis l'envoie comme document et le supprime.
+- **`.listgroups`** envoie la liste en DM à l'owner (pas dans le groupe).
+- L'image `anon.jpg` est optionnelle — si absente, le bot fonctionne quand même.
+- Supprime `session_otech/` si tu changes de compte.
 
 ---
 
-## 📞 Contact
-
-- **WhatsApp** : +509 3544 3504
-- **Email** : orlandotech2208@gmail.com
-- **Brand** : O-TECH
-
----
-
-<div align="center">
-
-**O-TECH © 2026 — Innovation constante 🚀**
-
-*Made with ❤️ in Haïti 🇭🇹*
-
-</div>
+**O-TECH © 2025 — Innovation constante 🚀**
