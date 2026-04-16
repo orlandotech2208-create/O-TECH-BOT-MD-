@@ -1412,12 +1412,16 @@ async function startOTechBot() {
         },
         printQRInTerminal: false,
         logger: pino({ level: "silent" }),
-        browser: ["O-TECH BOT", "Chrome", "5.0.0"],
+        browser: ["Ubuntu", "Chrome", "20.0.04"],
         connectTimeoutMs: 60_000,
-        keepAliveIntervalMs: 25_000,
+        keepAliveIntervalMs: 10_000,
         syncFullHistory: false,
-        markOnlineOnConnect: false,
-        getMessage: async () => undefined,
+        markOnlineOnConnect: true,
+        getMessage: async (key) => {
+            return { conversation: "" };
+        },
+        generateHighQualityLinkPreview: false,
+        retryRequestDelayMs: 2000,
     });
 
     // FIX PAIRING: demander le code dans connection.update au bon moment
@@ -1462,8 +1466,9 @@ async function startOTechBot() {
             const code = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = code !== DisconnectReason.loggedOut && code !== 401;
             if (shouldReconnect) {
-                console.log(`🔄 Reconnexion (code: ${code})...`);
-                await wait(5000);
+                const delay = code === 408 || code === 503 ? 10000 : 5000;
+                console.log(`🔄 Reconnexion dans ${delay/1000}s (code: ${code})...`);
+                await wait(delay);
                 startOTechBot();
             } else {
                 console.log("🔴 Session expiree. Supprime session_otech/ et relance.");
@@ -1472,8 +1477,14 @@ async function startOTechBot() {
         }
     });
 
-    sock.ev.on("messages.upsert", (m) => {
-        if (m.type === "notify") handleMessage(sock, m).catch(console.error);
+    sock.ev.on("messages.upsert", async (m) => {
+        try {
+            if (m.type === "notify" || m.type === "append") {
+                await handleMessage(sock, m);
+            }
+        } catch (err) {
+            console.error("[UPSERT ERROR]", err.message);
+        }
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
