@@ -1,7 +1,7 @@
 {
   "name": "otech-bot",
-  "version": "4.1.0",
-  "description": "O-TECH BOT WhatsApp — by Orlando Tech",
+  "version": "5.0.0",
+  "description": "O-TECH BOT WhatsApp — by Orlando Tech — Cyberpunk 2026",
   "main": "index.js",
   "type": "module",
   "scripts": {
