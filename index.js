@@ -74,6 +74,15 @@ const penduSessions = new Map();
 const bannedUsers   = new Set();
 const notesMap      = new Map();
 const pollSessions  = new Map();
+const afkUsers      = new Map();   // jid → { reason, time }
+const afkCooldown   = new Map();
+const profileData   = new Map();   // jid → { name, bio, country }
+const autoAdminMap  = new Set();   // groupJid → auto-promote ON
+const mutedMembers  = new Map();   // groupJid → Set(jid)
+const tempBanMap    = new Map();   // jid → { until, reason }
+const reminders     = new Map();   // jid → [{ text, time }]
+const marriageMap   = new Map();   // jid → jid
+const reportLog     = new Map();   // groupJid → [{ from, target, reason }]
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //   UTILITAIRES
@@ -214,55 +223,132 @@ async function interceptViewOnce(msg) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const commands = {
 
-    // ── MENU CYBERPUNK 2026 ───────────────────
+    // ── MENU SIGMA MDX STYLE v6.0 ────────────
     menu: async (sock, from, msg) => {
         const p = CONFIG.prefix;
+        const u = process.uptime();
+        const h = Math.floor(u/3600), mi = Math.floor((u%3600)/60), s = Math.floor(u%60);
+        const now     = new Date();
+        const timeStr = now.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+        const dateStr = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
+
         const text =
-            `⚡━━━━━━━━━━━━━━━━━━━━━━━━━⚡\n` +
-            `   🤖 *O-TECH BOT v5.0* 🤖\n` +
-            `   _Powered by Orlando Tech_\n` +
-            `   🇭🇹 *Innovation Constante* 🇭🇹\n` +
-            `⚡━━━━━━━━━━━━━━━━━━━━━━━━━⚡\n\n` +
-            `🔷 *[ INFO SYSTÈME ]*\n` +
-            `▸ ${p}menu ▸ ${p}ping ▸ ${p}botinfo\n` +
-            `▸ ${p}uptime ▸ ${p}owner\n\n` +
-            `🗡️ *[ MODÉRATION ]*\n` +
-            `▸ ${p}kick ▸ ${p}add ▸ ${p}promote ▸ ${p}demote\n` +
-            `▸ ${p}mute ▸ ${p}unmute ▸ ${p}warn ▸ ${p}resetwarn\n` +
-            `▸ ${p}clearwarn ▸ ${p}delete ▸ ${p}tag ▸ ${p}tagadmin\n` +
-            `▸ ${p}admins ▸ ${p}groupinfo ▸ ${p}link ▸ ${p}revoke\n` +
-            `▸ ${p}kickall ▸ ${p}kickall2 ▸ ${p}promoteall\n` +
-            `▸ ${p}demoteall ▸ ${p}bye ▸ ${p}join\n\n` +
-            `📢 *[ BROADCAST & CONTACTS ]*\n` +
-            `▸ ${p}broadcast ▸ ${p}contacts ▸ ${p}listgroups\n` +
-            `▸ ${p}annonce [msg]\n\n` +
-            `🔐 *[ SÉCURITÉ ]*\n` +
-            `▸ ${p}antilink ▸ ${p}antispam ▸ ${p}antibadword\n` +
-            `▸ ${p}antiraid ▸ ${p}block ▸ ${p}unblock\n` +
-            `▸ ${p}ban ▸ ${p}unban\n\n` +
-            `💰 *[ ÉCONOMIE ]*\n` +
-            `▸ ${p}daily ▸ ${p}work ▸ ${p}solde\n` +
-            `▸ ${p}pari ▸ ${p}rob ▸ ${p}transfert ▸ ${p}richesse\n\n` +
-            `🎮 *[ JEUX ]*\n` +
-            `▸ ${p}quiz ▸ ${p}pendu ▸ ${p}lettre ▸ ${p}devinette\n` +
-            `▸ ${p}8ball ▸ ${p}rps ▸ ${p}pile ▸ ${p}de\n` +
-            `▸ ${p}compteur ▸ ${p}ship ▸ ${p}hug ▸ ${p}slap ▸ ${p}fight\n` +
-            `▸ ${p}poll [q|opt1|opt2] ▸ ${p}vote\n\n` +
-            `📊 *[ STATS ]*\n` +
-            `▸ ${p}top ▸ ${p}stats ▸ ${p}monscore ▸ ${p}niveau\n\n` +
-            `📲 *[ MÉDIAS ]*\n` +
-            `▸ ${p}vv ▸ ${p}send ▸ ${p}pp ▸ ${p}meme ▸ ${p}img\n\n` +
-            `💬 *[ FAKE CHAT ]*\n` +
-            `▸ ${p}chat ▸ ${p}fchat ▸ ${p}typechat\n\n` +
-            `⚙️ *[ UTILS ]*\n` +
-            `▸ ${p}fancy ▸ ${p}tts ▸ ${p}calc\n` +
-            `▸ ${p}blague ▸ ${p}quote ▸ ${p}conseil\n` +
-            `▸ ${p}note ▸ ${p}notes ▸ ${p}supp\n` +
-            `▸ ${p}profil ▸ ${p}setpp ▸ ${p}setprefix\n` +
-            `▸ ${p}public ▸ ${p}sudo ▸ ${p}addprem\n\n` +
-            `💀 *[ BUG ]*\n` +
-            `▸ ${p}close ▸ ${p}kill ▸ ${p}fuck\n\n` +
-            `_⚡ O-TECH © 2026 — Cyberpunk Edition_ 🔷`;
+            `╭══〘〘 *O-TECH BOT* 〙〙═⊷\n` +
+            `┃❍ *Mᴏᴅᴇ:*  \`${CONFIG.mode}\`\n` +
+            `┃❍ *Pʀᴇғɪx:*  [ \`${p}\` ]\n` +
+            `┃❍ *Cᴏᴍᴍᴀɴᴅs:*  \`${Object.keys(commands).length}\`\n` +
+            `┃❍ *Vᴇʀsɪᴏɴ:*  \`6.0.0\`\n` +
+            `┃❍ *Uᴘᴛɪᴍᴇ:*  \`${h}h ${mi}m ${s}s\`\n` +
+            `┃❍ *Tɪᴍᴇ:*  \`${timeStr}\`\n` +
+            `┃❍ *Dᴀᴛᴇ:*  \`${dateStr}\`\n` +
+            `┃❍ *Oᴡɴᴇʀ:*  \`${CONFIG.owner}\`\n` +
+            `╰═════════════════⊷\n\n` +
+
+            `╭━━━━❮ *INFO* ❯━⊷\n` +
+            `┃◇ \`${p}menu\` ┃◇ \`${p}ping\`\n` +
+            `┃◇ \`${p}botinfo\` ┃◇ \`${p}uptime\`\n` +
+            `┃◇ \`${p}owner\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *MODÉRATION* ❯━⊷\n` +
+            `┃◇ \`${p}kick\` ┃◇ \`${p}add\`\n` +
+            `┃◇ \`${p}promote\` ┃◇ \`${p}demote\`\n` +
+            `┃◇ \`${p}mute\` ┃◇ \`${p}unmute\`\n` +
+            `┃◇ \`${p}warn\` ┃◇ \`${p}resetwarn\`\n` +
+            `┃◇ \`${p}clearwarn\` ┃◇ \`${p}delete\`\n` +
+            `┃◇ \`${p}tag\` ┃◇ \`${p}tagadmin\`\n` +
+            `┃◇ \`${p}hidetag\` ┃◇ \`${p}admins\`\n` +
+            `┃◇ \`${p}groupinfo\` ┃◇ \`${p}link\`\n` +
+            `┃◇ \`${p}revoke\` ┃◇ \`${p}rules\`\n` +
+            `┃◇ \`${p}setrules\` ┃◇ \`${p}setname\`\n` +
+            `┃◇ \`${p}setdesc\` ┃◇ \`${p}selfadmin\`\n` +
+            `┃◇ \`${p}kickall\` ┃◇ \`${p}kickall2\`\n` +
+            `┃◇ \`${p}promoteall\` ┃◇ \`${p}demoteall\`\n` +
+            `┃◇ \`${p}autoadmin\` ┃◇ \`${p}tagactive\`\n` +
+            `┃◇ \`${p}tempban\` ┃◇ \`${p}stealpp\`\n` +
+            `┃◇ \`${p}bye\` ┃◇ \`${p}join\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *BROADCAST & RAPPORTS* ❯━⊷\n` +
+            `┃◇ \`${p}broadcast\` ┃◇ \`${p}contacts\`\n` +
+            `┃◇ \`${p}listgroups\` ┃◇ \`${p}annonce\`\n` +
+            `┃◇ \`${p}report\` ┃◇ \`${p}reportlog\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *SÉCURITÉ* ❯━⊷\n` +
+            `┃◇ \`${p}antilink\` ┃◇ \`${p}antispam\`\n` +
+            `┃◇ \`${p}antibadword\` ┃◇ \`${p}antiraid\`\n` +
+            `┃◇ \`${p}block\` ┃◇ \`${p}unblock\`\n` +
+            `┃◇ \`${p}ban\` ┃◇ \`${p}unban\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *ÉCONOMIE* ❯━⊷\n` +
+            `┃◇ \`${p}daily\` ┃◇ \`${p}work\`\n` +
+            `┃◇ \`${p}solde\` ┃◇ \`${p}pari\`\n` +
+            `┃◇ \`${p}rob\` ┃◇ \`${p}transfert\`\n` +
+            `┃◇ \`${p}richesse\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *JEUX & DIVERTISSEMENT* ❯━⊷\n` +
+            `┃◇ \`${p}quiz\` ┃◇ \`${p}pendu\`\n` +
+            `┃◇ \`${p}lettre\` ┃◇ \`${p}devinette\`\n` +
+            `┃◇ \`${p}8ball\` ┃◇ \`${p}rps\`\n` +
+            `┃◇ \`${p}pile\` ┃◇ \`${p}de\`\n` +
+            `┃◇ \`${p}compteur\` ┃◇ \`${p}ship\`\n` +
+            `┃◇ \`${p}hug\` ┃◇ \`${p}slap\`\n` +
+            `┃◇ \`${p}fight\` ┃◇ \`${p}truth\`\n` +
+            `┃◇ \`${p}dare\` ┃◇ \`${p}wyr\`\n` +
+            `┃◇ \`${p}roast\` ┃◇ \`${p}compliment\`\n` +
+            `┃◇ \`${p}horoscope\` ┃◇ \`${p}marry\`\n` +
+            `┃◇ \`${p}divorce\` ┃◇ \`${p}couple\`\n` +
+            `┃◇ \`${p}poll\` ┃◇ \`${p}vote\`\n` +
+            `┃◇ \`${p}result\` ┃◇ \`${p}closepoll\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *STATS & ACTIVITÉ* ❯━⊷\n` +
+            `┃◇ \`${p}top\` ┃◇ \`${p}stats\`\n` +
+            `┃◇ \`${p}monscore\` ┃◇ \`${p}niveau\`\n` +
+            `┃◇ \`${p}active\` ┃◇ \`${p}clearstats\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *MÉDIAS* ❯━⊷\n` +
+            `┃◇ \`${p}vv\` ┃◇ \`${p}send\`\n` +
+            `┃◇ \`${p}pp\` ┃◇ \`${p}meme\`\n` +
+            `┃◇ \`${p}img\` ┃◇ \`${p}toimg\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *FAKE CHAT* ❯━⊷\n` +
+            `┃◇ \`${p}chat\` ┃◇ \`${p}fchat\`\n` +
+            `┃◇ \`${p}typechat\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *OUTILS & INFOS* ❯━⊷\n` +
+            `┃◇ \`${p}weather\` ┃◇ \`${p}translate\`\n` +
+            `┃◇ \`${p}wiki\` ┃◇ \`${p}crypto\`\n` +
+            `┃◇ \`${p}fact\` ┃◇ \`${p}password\`\n` +
+            `┃◇ \`${p}reverse\` ┃◇ \`${p}upper\`\n` +
+            `┃◇ \`${p}lower\` ┃◇ \`${p}count\`\n` +
+            `┃◇ \`${p}afk\` ┃◇ \`${p}afklist\`\n` +
+            `┃◇ \`${p}reminder\` ┃◇ \`${p}reg\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *UTILS* ❯━⊷\n` +
+            `┃◇ \`${p}fancy\` ┃◇ \`${p}tts\`\n` +
+            `┃◇ \`${p}calc\` ┃◇ \`${p}blague\`\n` +
+            `┃◇ \`${p}quote\` ┃◇ \`${p}conseil\`\n` +
+            `┃◇ \`${p}note\` ┃◇ \`${p}notes\`\n` +
+            `┃◇ \`${p}supp\` ┃◇ \`${p}profil\`\n` +
+            `┃◇ \`${p}setpp\` ┃◇ \`${p}setprefix\`\n` +
+            `┃◇ \`${p}public\` ┃◇ \`${p}sudo\`\n` +
+            `┃◇ \`${p}addprem\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `╭━━━━❮ *BUG* ❯━⊷\n` +
+            `┃◇ \`${p}close\` ┃◇ \`${p}kill\`\n` +
+            `┃◇ \`${p}fuck\`\n` +
+            `╰━━━━━━━━━━━━━━━━━⊷\n\n` +
+
+            `_⚡ O-TECH © 2026 — otech.ht_ 🔷`;
         await sendLogo(sock, from, text, msg);
     },
 
@@ -1291,6 +1377,528 @@ const commands = {
         const chars = ["⚠","🔴","💢","⛔","🚨","💥"];
         for (let i = 0; i < 10; i++) { await sock.sendMessage(target, { text: chars[i%chars.length].repeat(300) }); await wait(150); }
     },
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //   NOUVELLES COMMANDES PRO v6.0
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ── SELF ADMIN ────────────────────────────────
+    selfadmin: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const ownerJid = CONFIG.ownerNumber + "@s.whatsapp.net";
+        try {
+            await sock.groupParticipantsUpdate(from, [ownerJid], "promote");
+            await reply(sock, from, `${NEON} *Tu es maintenant admin!* 👑`, msg);
+        } catch (_) { await reply(sock, from, "❌ Le bot doit être admin d'abord.", msg); }
+    },
+
+    // ── SETDESC ───────────────────────────────────
+    setdesc: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const desc = args.join(" ");
+        if (!desc.trim()) return reply(sock, from, "❌ Usage: .setdesc Nouvelle description", msg);
+        try {
+            await sock.groupUpdateDescription(from, desc);
+            await reply(sock, from, `${CYBER} *Description mise à jour!* ✅\n\n_${desc}_`, msg);
+        } catch (_) { await reply(sock, from, "❌ Le bot doit être admin.", msg); }
+    },
+
+    // ── SETNAME ───────────────────────────────────
+    setname: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const name = args.join(" ");
+        if (!name.trim()) return reply(sock, from, "❌ Usage: .setname Nouveau nom", msg);
+        try {
+            await sock.groupUpdateSubject(from, name);
+            await reply(sock, from, `${CYBER} *Nom du groupe changé!* ✅\n\n_${name}_`, msg);
+        } catch (_) { await reply(sock, from, "❌ Le bot doit être admin.", msg); }
+    },
+
+    // ── RULES ─────────────────────────────────────
+    setrules: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const rules = args.join(" ");
+        if (!rules.trim()) return reply(sock, from, "❌ Usage: .setrules Règle1 | Règle2 | Règle3", msg);
+        setGroupSetting(from, "rules", rules);
+        await reply(sock, from, `${LOCK} *Règles sauvegardées!* ✅`, msg);
+    },
+
+    rules: async (sock, from, msg) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const rules = getGroupSetting(from, "rules");
+        if (!rules) return reply(sock, from, "❌ Aucune règle définie. Tape .setrules", msg);
+        const list = rules.split("|").map((r, i) => `*${i+1}.* ${r.trim()}`).join("\n");
+        const meta = await sock.groupMetadata(from);
+        await reply(sock, from,
+            `${LOCK}━━━━━━━━━━━━━━━━━━${LOCK}\n` +
+            `   📜 *RÈGLES — ${meta.subject}*\n` +
+            `${LOCK}━━━━━━━━━━━━━━━━━━${LOCK}\n\n` +
+            `${list}\n\n` +
+            `_O-TECH BOT — Respectez les règles!_`, msg);
+    },
+
+    // ── HIDETAG ───────────────────────────────────
+    hidetag: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const texte = args.join(" ") || `${NEON} Notification de groupe`;
+        const meta  = await sock.groupMetadata(from);
+        const members = meta.participants.map(p => p.id);
+        await sock.sendMessage(from, { text: texte, mentions: members }, { quoted: msg });
+    },
+
+    // ── AUTOADMIN ─────────────────────────────────
+    autoadmin: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const val = args[0]?.toLowerCase();
+        if (!["on","off"].includes(val)) return reply(sock, from, "❌ Usage: .autoadmin on/off", msg);
+        if (val === "on") autoAdminMap.add(from); else autoAdminMap.delete(from);
+        await reply(sock, from, `${NEON} Auto-Admin: *${val.toUpperCase()}*\n_Chaque nouveau membre sera promu admin._`, msg);
+    },
+
+    // ── REPORT ────────────────────────────────────
+    report: async (sock, from, msg, args, sender) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .report @user raison", msg);
+        const target = mentioned[0];
+        const reason = args.filter(a => !a.startsWith("@") && !/^\d+$/.test(a)).join(" ") || "Non spécifiée";
+        if (!reportLog.has(from)) reportLog.set(from, []);
+        reportLog.get(from).push({ from: sender, target, reason, time: new Date().toLocaleString("fr-FR") });
+        const meta = await sock.groupMetadata(from);
+        const ownerJid = CONFIG.ownerNumber + "@s.whatsapp.net";
+        try {
+            await sock.sendMessage(ownerJid, {
+                text: `${SKULL} *RAPPORT*\n\n📍 Groupe: *${meta.subject}*\n👤 Signalé: @${shortNum(target)}\n📝 Raison: ${reason}\n🕐 ${new Date().toLocaleString("fr-FR")}`,
+                mentions: [target]
+            });
+        } catch (_) {}
+        await reply(sock, from, `${CYBER} Rapport envoyé aux admins. Merci! ✅`, msg);
+    },
+
+    reportlog: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const logs = reportLog.get(from) || [];
+        if (!logs.length) return reply(sock, from, "✅ Aucun rapport pour ce groupe.", msg);
+        let text = `${SKULL} *RAPPORTS (${logs.length})*\n\n`;
+        for (const l of logs) text += `👤 @${shortNum(l.target)}\n📝 ${l.reason}\n🕐 ${l.time}\n\n`;
+        await reply(sock, from, text, msg);
+    },
+
+    // ── AFK ───────────────────────────────────────
+    afk: async (sock, from, msg, args, sender) => {
+        const reason = args.join(" ") || "Absent";
+        afkUsers.set(sender, { reason, time: Date.now() });
+        await reply(sock, from,
+            `${CHIP} *Mode AFK activé* 😴\n\n` +
+            `👤 @${shortNum(sender)}\n` +
+            `📝 Raison: _${reason}_\n\n` +
+            `_Tu seras notifié si quelqu'un te mentionne._`, msg);
+    },
+
+    afklist: async (sock, from, msg) => {
+        if (!afkUsers.size) return reply(sock, from, `${CHIP} Aucun membre AFK.`, msg);
+        let text = `${CHIP} *MEMBRES AFK*\n\n`;
+        for (const [jid, { reason, time }] of afkUsers) {
+            const mins = Math.floor((Date.now() - time) / 60000);
+            text += `👤 @${shortNum(jid)}\n📝 ${reason}\n⏱️ Il y a ${mins} min\n\n`;
+        }
+        const mentions = [...afkUsers.keys()];
+        await sock.sendMessage(from, { text, mentions }, { quoted: msg });
+    },
+
+    // ── REGISTER ──────────────────────────────────
+    reg: async (sock, from, msg, args, sender) => {
+        const parts = args.join(" ").split("|").map(s => s.trim());
+        if (parts.length < 2) return reply(sock, from, "❌ Usage: .reg Nom | Pays", msg);
+        profileData.set(sender, { name: parts[0], country: parts[1] || "Inconnu", bio: parts[2] || "Aucune bio", date: new Date().toLocaleDateString("fr-FR") });
+        await reply(sock, from,
+            `${NEON} *Profil créé!* ✅\n\n` +
+            `👤 Nom: *${parts[0]}*\n` +
+            `🌍 Pays: *${parts[1] || "Inconnu"}*\n\n` +
+            `_Tape .profil pour voir ton profil._`, msg);
+    },
+
+    // ── MARIAGE ───────────────────────────────────
+    marry: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .marry @user", msg);
+        const target = mentioned[0];
+        if (marriageMap.has(sender)) return reply(sock, from, "❌ Tu es déjà marié(e)! Tape .divorce d'abord.", msg);
+        if (marriageMap.has(target)) return reply(sock, from, `❌ @${shortNum(target)} est déjà marié(e)!`, msg);
+        marriageMap.set(sender, target); marriageMap.set(target, sender);
+        await sock.sendMessage(from, {
+            text: `💍 *MARIAGE O-TECH*\n\n@${shortNum(sender)} 💕 @${shortNum(target)}\n\n_Félicitations! Que votre amour dure éternellement!_ 🥂`,
+            mentions: [sender, target]
+        }, { quoted: msg });
+    },
+
+    divorce: async (sock, from, msg, args, sender) => {
+        if (!marriageMap.has(sender)) return reply(sock, from, "❌ Tu n'es pas marié(e).", msg);
+        const partner = marriageMap.get(sender);
+        marriageMap.delete(sender); marriageMap.delete(partner);
+        await sock.sendMessage(from, {
+            text: `💔 *DIVORCE*\n\n@${shortNum(sender)} et @${shortNum(partner)} se séparent...\n\n_C'est la vie._`,
+            mentions: [sender, partner]
+        }, { quoted: msg });
+    },
+
+    couple: async (sock, from, msg) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target = mentioned[0];
+        if (!target || !marriageMap.has(target)) return reply(sock, from, "❌ Usage: .couple @user (ou ce membre n'est pas marié)", msg);
+        const partner = marriageMap.get(target);
+        await sock.sendMessage(from, {
+            text: `💑 *COUPLE*\n\n@${shortNum(target)} 💕 @${shortNum(partner)}`,
+            mentions: [target, partner]
+        }, { quoted: msg });
+    },
+
+    // ── TEMPBAN ───────────────────────────────────
+    tempban: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .tempban @user 10 raison (minutes)", msg);
+        const minutes = parseInt(args.find(a => /^\d+$/.test(a))) || 10;
+        const reason  = args.filter(a => !a.startsWith("@") && !/^\d+$/.test(a)).join(" ") || "Non spécifiée";
+        const target  = mentioned[0];
+        tempBanMap.set(target, { until: Date.now() + minutes * 60000, reason });
+        await sock.groupParticipantsUpdate(from, [target], "remove");
+        await sock.sendMessage(from, {
+            text: `${SKULL} *TEMPBAN*\n\n@${shortNum(target)} expulsé pour *${minutes} min*\n📝 Raison: ${reason}`,
+            mentions: [target]
+        }, { quoted: msg });
+        setTimeout(async () => {
+            tempBanMap.delete(target);
+            try { await sock.groupParticipantsUpdate(from, [target], "add"); } catch (_) {}
+        }, minutes * 60000);
+    },
+
+    // ── REMINDER ──────────────────────────────────
+    reminder: async (sock, from, msg, args, sender) => {
+        const raw   = args.join(" ");
+        const parts = raw.split("|").map(s => s.trim());
+        if (parts.length < 2) return reply(sock, from, "❌ Usage: .reminder 5 | Ton rappel (minutes)", msg);
+        const minutes = parseInt(parts[0]);
+        const texte   = parts[1];
+        if (isNaN(minutes) || minutes < 1) return reply(sock, from, "❌ Nombre de minutes invalide.", msg);
+        await reply(sock, from, `${CYBER} ⏰ Rappel dans *${minutes} min*!\n_${texte}_`, msg);
+        setTimeout(async () => {
+            await sock.sendMessage(from, { text: `⏰ *RAPPEL O-TECH*\n\n@${shortNum(sender)}\n📝 ${texte}`, mentions: [sender] });
+        }, minutes * 60000);
+    },
+
+    // ── PASSWORD GENERATOR ────────────────────────
+    password: async (sock, from, msg, args) => {
+        const len   = Math.min(Math.max(parseInt(args[0]) || 12, 6), 32);
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
+        let pwd = "";
+        for (let i = 0; i < len; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+        await reply(sock, from,
+            `${LOCK} *Mot de passe généré*\n\n` +
+            `\`\`\`${pwd}\`\`\`\n\n` +
+            `🔢 Longueur: *${len} caractères*\n` +
+            `_⚠️ Ne partage jamais ton mot de passe!_`, msg);
+    },
+
+    // ── REVERSE / UPPER / LOWER / COUNT ──────────
+    reverse: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .reverse texte", msg);
+        await reply(sock, from, `🔄 *Texte inversé:*\n\n${args.join(" ").split("").reverse().join("")}`, msg);
+    },
+
+    upper: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .upper texte", msg);
+        await reply(sock, from, `🔠 ${args.join(" ").toUpperCase()}`, msg);
+    },
+
+    lower: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .lower texte", msg);
+        await reply(sock, from, `🔡 ${args.join(" ").toLowerCase()}`, msg);
+    },
+
+    count: async (sock, from, msg, args) => {
+        const text = args.join(" ");
+        if (!text.trim()) return reply(sock, from, "❌ Usage: .count texte", msg);
+        await reply(sock, from,
+            `${CHIP} *Analyse du texte*\n\n` +
+            `📝 Caractères: *${text.length}*\n` +
+            `📊 Mots: *${text.trim().split(/\s+/).length}*\n` +
+            `📄 Lignes: *${text.split("\n").length}*`, msg);
+    },
+
+    // ── MÉTÉO ─────────────────────────────────────
+    weather: async (sock, from, msg, args) => {
+        const city = args.join(" ");
+        if (!city.trim()) return reply(sock, from, "❌ Usage: .weather Port-au-Prince", msg);
+        try {
+            const res  = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+            const data = await res.json();
+            const curr = data.current_condition[0];
+            const temp = curr.temp_C;
+            const feel = curr.FeelsLikeC;
+            const hum  = curr.humidity;
+            const wind = curr.windspeedKmph;
+            const desc = curr.weatherDesc[0].value;
+            const emo  = temp > 30 ? "☀️" : temp > 20 ? "⛅" : temp > 10 ? "🌥️" : "❄️";
+            await reply(sock, from,
+                `${emo}━━━━━━━━━━━━━━━━━━${emo}\n` +
+                `   🌍 *MÉTÉO — ${city.toUpperCase()}*\n` +
+                `${emo}━━━━━━━━━━━━━━━━━━${emo}\n\n` +
+                `🌡️ Température: *${temp}°C*\n` +
+                `🤔 Ressenti: *${feel}°C*\n` +
+                `💧 Humidité: *${hum}%*\n` +
+                `💨 Vent: *${wind} km/h*\n` +
+                `📋 Condition: *${desc}*\n\n` +
+                `_⚡ O-TECH BOT — Météo en direct_`, msg);
+        } catch (_) {
+            await reply(sock, from, `❌ Météo de *${city}* indisponible.`, msg);
+        }
+    },
+
+    // ── TRANSLATE ─────────────────────────────────
+    translate: async (sock, from, msg, args) => {
+        if (args.length < 2) return reply(sock, from, "❌ Usage: .translate fr Bonjour (langue + texte)", msg);
+        const lang = args[0];
+        const text = args.slice(1).join(" ");
+        try {
+            const res  = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${lang}`);
+            const data = await res.json();
+            const translated = data.responseData?.translatedText || "Traduction non disponible.";
+            await reply(sock, from,
+                `🌐 *TRADUCTION O-TECH*\n\n` +
+                `📝 Original: _${text}_\n` +
+                `🔁 [${lang.toUpperCase()}]: *${translated}*`, msg);
+        } catch (_) { await reply(sock, from, "❌ Service de traduction indisponible.", msg); }
+    },
+
+    // ── WIKIPEDIA ─────────────────────────────────
+    wiki: async (sock, from, msg, args) => {
+        if (!args.length) return reply(sock, from, "❌ Usage: .wiki Haiti", msg);
+        const query = args.join(" ");
+        try {
+            const res  = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (!data.extract) return reply(sock, from, `❌ Aucun résultat pour *${query}*.`, msg);
+            const extract = data.extract.slice(0, 700);
+            await reply(sock, from,
+                `${CHIP}━━━━━━━━━━━━━━━━━━${CHIP}\n` +
+                `   📚 *WIKIPEDIA*\n` +
+                `${CHIP}━━━━━━━━━━━━━━━━━━${CHIP}\n\n` +
+                `*${data.title}*\n\n${extract}...\n\n` +
+                `🔗 ${data.content_urls?.desktop?.page || ""}`, msg);
+        } catch (_) { await reply(sock, from, `❌ Wikipedia indisponible pour *${query}*.`, msg); }
+    },
+
+    // ── CRYPTO ────────────────────────────────────
+    crypto: async (sock, from, msg, args) => {
+        const coin = (args[0] || "bitcoin").toLowerCase();
+        try {
+            const res  = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd,eur`);
+            const data = await res.json();
+            if (!data[coin]) return reply(sock, from, `❌ Crypto *${coin}* introuvable.`, msg);
+            await reply(sock, from,
+                `${NEON} *CRYPTO — ${coin.toUpperCase()}*\n\n` +
+                `💵 USD: *$${data[coin].usd?.toLocaleString()}*\n` +
+                `💶 EUR: *€${data[coin].eur?.toLocaleString()}*\n\n` +
+                `_Data: CoinGecko_`, msg);
+        } catch (_) { await reply(sock, from, `❌ Impossible de récupérer *${coin}*.`, msg); }
+    },
+
+    // ── WOULD YOU RATHER ──────────────────────────
+    wyr: async (sock, from, msg) => {
+        const q = [
+            ["Être invisible","Pouvoir voler"],
+            ["Vivre sans internet","Vivre sans musique"],
+            ["Parler 10 langues","Jouer de 10 instruments"],
+            ["Être riche mais seul","Être pauvre mais entouré"],
+            ["Voyager dans le futur","Voyager dans le passé"],
+            ["Avoir un robot assistant","Avoir un super pouvoir secret"],
+        ][Math.floor(Math.random() * 6)];
+        await reply(sock, from,
+            `🤔 *WOULD YOU RATHER?*\n\n` +
+            `1️⃣ *${q[0]}*\n   _ou_\n2️⃣ *${q[1]}*\n\n_Réponds 1 ou 2!_`, msg);
+    },
+
+    // ── TRUTH OR DARE ─────────────────────────────
+    truth: async (sock, from, msg) => {
+        const truths = [
+            "Quelle est ta plus grande peur?",
+            "As-tu déjà menti à ton meilleur ami?",
+            "Qui est ton crush en ce moment?",
+            "Quelle est la chose la plus folle que tu as faite?",
+            "Quel est ton pire défaut?",
+            "As-tu déjà pleuré à cause d'un film?",
+        ];
+        await reply(sock, from, `😇 *TRUTH:*\n\n${truths[Math.floor(Math.random() * truths.length)]}`, msg);
+    },
+
+    dare: async (sock, from, msg) => {
+        const dares = [
+            "Envoie un message bizarre à la dernière personne de tes contacts.",
+            "Fais 20 pompes maintenant!",
+            "Chante une chanson en vocal dans le groupe.",
+            "Dis un secret que tu n'as jamais dit.",
+            "Écris 'Je suis un génie' 10 fois de suite.",
+        ];
+        await reply(sock, from, `😈 *DARE:*\n\n${dares[Math.floor(Math.random() * dares.length)]}`, msg);
+    },
+
+    // ── FACT ──────────────────────────────────────
+    fact: async (sock, from, msg) => {
+        const facts = [
+            "🧠 Le cerveau humain génère ~70 000 pensées par jour.",
+            "🐙 Le poulpe a 3 cœurs et du sang bleu.",
+            "🌍 La Terre tourne à 1 674 km/h sur son axe.",
+            "💧 Le corps humain est composé à 60% d'eau.",
+            "🐝 Une abeille butine ~2 millions de fleurs pour 500g de miel.",
+            "⚡ La foudre frappe la Terre 100 fois par seconde.",
+            "🌙 La Lune s'éloigne de la Terre de 3,8 cm chaque année.",
+            "🦈 Les requins existaient avant les dinosaures.",
+            "📱 Il y a plus de smartphones sur Terre que d'humains.",
+            "🎵 La musique réduit le stress de 65% selon des études.",
+        ];
+        await reply(sock, from, `${CHIP} *FACT DU JOUR*\n\n${facts[Math.floor(Math.random() * facts.length)]}`, msg);
+    },
+
+    // ── ROAST / COMPLIMENT ────────────────────────
+    roast: async (sock, from, msg, args, sender) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .roast @user", msg);
+        const target = mentioned[0];
+        if (isOwner(target)) return reply(sock, from, "❌ Impossible de roaster l'owner! 😂", msg);
+        const roasts = [
+            "Même Google Maps ne peut pas trouver ton cerveau! 🗺️",
+            "Tu es la preuve que l'évolution peut faire marche arrière. 🦍",
+            "Si les bêtises étaient de l'or, tu serais milliardaire. 💰",
+            "Ton QI est tellement bas que les plantes le ressentent. 🌱",
+            "Tu parles tellement lentement que les portes automatiques se ferment devant toi. 🚪",
+        ];
+        await sock.sendMessage(from, {
+            text: `🔥 *ROAST*\n\n@${shortNum(target)}, ${roasts[Math.floor(Math.random() * roasts.length)]}`,
+            mentions: [target]
+        }, { quoted: msg });
+    },
+
+    compliment: async (sock, from, msg) => {
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (!mentioned.length) return reply(sock, from, "❌ Usage: .compliment @user", msg);
+        const target = mentioned[0];
+        const compliments = [
+            "est absolument brillant(e)! ✨",
+            "a un sourire qui illumine toute la pièce! 😊",
+            "est la définition du talent et de la grâce! 🌟",
+            "inspire tout le monde autour de lui/elle! 💫",
+            "mérite tout le bonheur du monde! 🌈",
+        ];
+        await sock.sendMessage(from, {
+            text: `💝 *COMPLIMENT*\n\n@${shortNum(target)} ${compliments[Math.floor(Math.random() * compliments.length)]}`,
+            mentions: [target]
+        }, { quoted: msg });
+    },
+
+    // ── HOROSCOPE ─────────────────────────────────
+    horoscope: async (sock, from, msg, args) => {
+        const signs = {
+            belier:     { e:"♈", m:"Mars vous donne une énergie débordante. Foncez!" },
+            taureau:    { e:"♉", m:"Vénus favorise vos projets financiers. Prudence en amour." },
+            gemeaux:    { e:"♊", m:"Mercure stimule votre créativité. Excellent pour communiquer." },
+            cancer:     { e:"♋", m:"La Lune renforce vos intuitions. Fiez-vous à votre instinct." },
+            lion:       { e:"♌", m:"Le Soleil brille sur vous. Leadership et reconnaissance!" },
+            vierge:     { e:"♍", m:"Mercure vous aide à organiser. Journée productive." },
+            balance:    { e:"♎", m:"Vénus harmonise vos relations. Belle journée pour l'amour." },
+            scorpion:   { e:"♏", m:"Pluton révèle des secrets. Restez vigilant et persévérant." },
+            sagittaire: { e:"♐", m:"Jupiter vous ouvre de nouveaux horizons. Apprenez!" },
+            capricorne: { e:"♑", m:"Saturne récompense vos efforts. Le travail paie enfin!" },
+            verseau:    { e:"♒", m:"Uranus vous inspire des idées révolutionnaires. Osez!" },
+            poissons:   { e:"♓", m:"Neptune booste votre sensibilité. Journée créative!" },
+        };
+        const sign = args[0]?.toLowerCase();
+        if (!sign || !signs[sign]) {
+            return reply(sock, from, `❌ Signe invalide!\n\nDisponibles: ${Object.keys(signs).join(", ")}`, msg);
+        }
+        const s = signs[sign];
+        await reply(sock, from,
+            `${s.e} *HOROSCOPE — ${sign.toUpperCase()}*\n\n${s.m}\n\n_⚡ O-TECH BOT — Astrologie du jour_`, msg);
+    },
+
+    // ── TOIMG (sticker → image) ───────────────────
+    toimg: async (sock, from, msg) => {
+        const ctx = msg.message?.extendedTextMessage?.contextInfo;
+        const qm  = ctx?.quotedMessage;
+        if (!qm?.stickerMessage) return reply(sock, from, "❌ Réponds à un sticker avec .toimg", msg);
+        try {
+            const stream = await downloadContentFromMessage(qm.stickerMessage, "sticker");
+            const chunks = []; for await (const ch of stream) chunks.push(ch);
+            await sock.sendMessage(from, { image: Buffer.concat(chunks), caption: `${NEON} Sticker converti!` }, { quoted: msg });
+        } catch (e) { await reply(sock, from, `❌ Erreur: ${e.message}`, msg); }
+    },
+
+    // ── ACTIVE STATS ──────────────────────────────
+    active: async (sock, from, msg) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const meta   = await sock.groupMetadata(from);
+        const gs     = groupMsgStats.get(from) || {};
+        const total  = Object.values(gs).reduce((a, b) => a + b, 0);
+        const actifs = Object.keys(gs).length;
+        await reply(sock, from,
+            `${CHIP} *ACTIVITÉ DU GROUPE*\n\n` +
+            `👥 Total membres: *${meta.participants.length}*\n` +
+            `✅ Membres actifs: *${actifs}*\n` +
+            `😴 Membres inactifs: *${meta.participants.length - actifs}*\n` +
+            `💬 Messages total: *${total}*\n\n` +
+            `_Tape .top pour le classement_`, msg);
+    },
+
+    clearstats: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        groupMsgStats.delete(from);
+        await reply(sock, from, `${CYBER} *Stats réinitialisées!* ✅`, msg);
+    },
+
+    tagactive: async (sock, from, msg, args, sender) => {
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        const gs     = groupMsgStats.get(from) || {};
+        const actifs = Object.keys(gs);
+        if (!actifs.length) return reply(sock, from, "❌ Pas encore de stats.", msg);
+        const texte  = args.join(" ") || `${NEON} Message pour les membres actifs!`;
+        let text = `${NEON} *${texte}*\n\n`;
+        for (const jid of actifs) text += `@${shortNum(jid)} `;
+        await sock.sendMessage(from, { text, mentions: actifs }, { quoted: msg });
+    },
+
+    // ── CLOSEPOLL ─────────────────────────────────
+    closepoll: async (sock, from, msg, args, sender) => {
+        if (!isGroup(from)) return reply(sock, from, "❌ Groupe seulement.", msg);
+        if (!isSudo(sender)) return reply(sock, from, "❌ Admin seulement.", msg);
+        const key = `poll_${from}`;
+        if (!pollSessions.has(key)) return reply(sock, from, "❌ Pas de sondage actif.", msg);
+        pollSessions.delete(key);
+        await reply(sock, from, `${LOCK} *Sondage fermé!*`, msg);
+    },
+
+    // ── STEALPP — copier photo du groupe ──────────
+    stealpp: async (sock, from, msg, args, sender) => {
+        if (!isOwner(sender)) return reply(sock, from, "❌ Owner seulement.", msg);
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const target    = mentioned[0] || from;
+        try {
+            const ppUrl = await sock.profilePictureUrl(target, "image");
+            const res   = await fetch(ppUrl);
+            const buf   = Buffer.from(await res.arrayBuffer());
+            await sock.updateProfilePicture(sock.user.id, { img: buf });
+            await reply(sock, from, `${CYBER} Photo de profil copiée! ✅`, msg);
+        } catch (_) { await reply(sock, from, "❌ Impossible de récupérer la photo.", msg); }
+    },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1362,6 +1970,25 @@ async function handleMessage(sock, m) {
 
     // Quiz / Devinette check
     if (!body.startsWith(CONFIG.prefix)) {
+        // ── AFK: retour automatique ──────────────────
+        if (afkUsers.has(sender)) {
+            const afk = afkUsers.get(sender);
+            const mins = Math.floor((Date.now() - afk.time) / 60000);
+            afkUsers.delete(sender);
+            await reply(sock, from,
+                `${CHIP} @${shortNum(sender)} est de retour! ✅\n` +
+                `_Était AFK depuis ${mins} min — Raison: ${afk.reason}_`, msg);
+        }
+        // ── AFK: notifier si quelqu'un mentionne un AFK ─
+        const mentionedInMsg = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        for (const mentioned of mentionedInMsg) {
+            if (afkUsers.has(mentioned) && mentioned !== sender) {
+                const afk = afkUsers.get(mentioned);
+                const mins = Math.floor((Date.now() - afk.time) / 60000);
+                await reply(sock, from,
+                    `😴 @${shortNum(mentioned)} est *AFK* depuis ${mins} min\n📝 Raison: _${afk.reason}_`, msg);
+            }
+        }
         for (const [key, session] of quizSessions) {
             if (key.includes(from) && key.includes(shortNum(sender))) {
                 if (body.toLowerCase().includes(session.answer.toLowerCase())) {
@@ -1559,6 +2186,10 @@ async function startOTechBot() {
                 } catch (_) {}
 
                 if (anu.action === "add") {
+                    // AUTO-ADMIN
+                    if (autoAdminMap.has(anu.id)) {
+                        try { await sock.groupParticipantsUpdate(anu.id, [num], "promote"); } catch (_) {}
+                    }
                     // RANG: combien de membres y a-t-il maintenant
                     const rank = meta.participants.length;
                     const rankText = ordinal(rank);
