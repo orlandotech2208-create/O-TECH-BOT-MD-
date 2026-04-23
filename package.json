@@ -1,23 +1,16 @@
 {
-  "name": "o-tech-bot",
+  "name": "otech-bot",
   "version": "5.0.0",
-  "description": "O-TECH Bot WhatsApp by Orlando Tech",
+  "description": "O-TECH BOT WhatsApp — by Orlando Tech — Cyberpunk 2026",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node index.js"
   },
-  "keywords": ["whatsapp", "bot", "baileys", "o-tech"],
-  "author": "Orlando Tech",
-  "license": "MIT",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.6.0",
-    "pino": "^8.17.0",
-    "pino-pretty": "^10.3.0",
-    "qrcode-terminal": "^0.12.0"
+    "baileys": "latest",
+    "pino": "latest"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "author": "Orlando Tech",
+  "license": "MIT"
 }
