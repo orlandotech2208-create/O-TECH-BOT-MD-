@@ -2280,38 +2280,33 @@ async function startOTechBot() {
         getMessage: async () => ({ conversation: "" }),
     });
 
-    let pairingDone = false;
+    // ── PAIRING CODE — demandé AVANT connection.update ──
+    if (phoneNumber && !state.creds.registered) {
+        await wait(500);
+        try {
+            const code = await sock.requestPairingCode(phoneNumber);
+            const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
+            console.log("\n" + "═".repeat(44));
+            console.log("  ⚡  O-TECH BOT v6.0 — PAIRING CODE  ⚡");
+            console.log("═".repeat(44));
+            console.log("\n         >>> " + fmt + " <<<\n");
+            console.log("═".repeat(44));
+            console.log("\n  📱 WhatsApp va t'envoyer une notification!");
+            console.log("  Si pas de notif, va manuellement:");
+            console.log("  ⚙️ Paramètres → Appareils connectés");
+            console.log("  → Connecter un appareil");
+            console.log("  → Connecter avec un numéro");
+            console.log("  → Entre: " + fmt);
+            console.log("\n  ⏳ ~60 secondes!\n");
+        } catch (e) {
+            console.log("❌ Pairing erreur: " + e.message);
+            console.log("💡 rm -rf session_otech && node index.js");
+        }
+    }
 
-    sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
+    sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
         if (connection === "connecting") {
             console.log("🔄 Connexion en cours...");
-        }
-
-        // Pairing: demander immédiatement après que le socket démarre
-        if (!pairingDone && phoneNumber && !state.creds.registered) {
-            pairingDone = true;
-            await wait(1000);
-            try {
-                const num  = phoneNumber.replace(/[^0-9]/g, "");
-                const code = await sock.requestPairingCode(num);
-                const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
-                console.log("\n" + "═".repeat(44));
-                console.log("  ⚡  O-TECH BOT v6.0 — PAIRING CODE  ⚡");
-                console.log("═".repeat(44));
-                console.log("\n         >>> " + fmt + " <<<\n");
-                console.log("═".repeat(44));
-                console.log("\n  📱 Étapes:");
-                console.log("  1. WhatsApp → Paramètres");
-                console.log("  2. Appareils connectés");
-                console.log("  3. Connecter un appareil");
-                console.log("  4. Connecter avec un numéro");
-                console.log("  5. Entre: " + fmt);
-                console.log("\n  ⏳ ~60 secondes avant expiration!\n");
-            } catch (e) {
-                pairingDone = false;
-                console.log("❌ " + e.message);
-                console.log("💡 rm -rf session_otech && node index.js");
-            }
         }
 
         if (false) {  // placeholder
