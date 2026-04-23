@@ -2280,30 +2280,36 @@ async function startOTechBot() {
         getMessage: async () => ({ conversation: "" }),
     });
 
-    // FIX PAIRING: demander le code dans connection.update au bon moment
     let pairingDone = false;
 
-    sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+    sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
         if (connection === "connecting") {
             console.log("🔄 Connexion en cours...");
-            // FIX: demander le code ici, pas avant la creation du socket
+            // Demander le code pairing quand le socket est prêt
             if (phoneNumber && !state.creds.registered && !pairingDone) {
                 pairingDone = true;
-                await wait(2000);
+                await wait(3500);
                 try {
-                    const code = await sock.requestPairingCode(phoneNumber);
+                    const num  = phoneNumber.replace(/[^0-9]/g, "");
+                    const code = await sock.requestPairingCode(num);
                     const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
-                    console.log("\n" + "═".repeat(40));
-                    console.log("  ⚡ O-TECH BOT v5.0 — CODE DE JUMELAGE");
-                    console.log("═".repeat(40));
-                    console.log(`  >>>  ${fmt}  <<<`);
-                    console.log("═".repeat(40));
-                    console.log("\n👉 WhatsApp → Appareils connectes");
-                    console.log("👉 Connecter avec un numero de telephone");
-                    console.log(`👉 Entre le code: ${fmt}\n`);
+                    console.log("\n" + "═".repeat(44));
+                    console.log("  ⚡  O-TECH BOT v6.0 — PAIRING CODE  ⚡");
+                    console.log("═".repeat(44));
+                    console.log("\n         >>> " + fmt + " <<<\n");
+                    console.log("═".repeat(44));
+                    console.log("\n  📱 Comment entrer le code:");
+                    console.log("  1. Ouvre WhatsApp sur ton téléphone");
+                    console.log("  2. Paramètres → Appareils connectés");
+                    console.log("  3. Connecter un appareil");
+                    console.log("  4. Connecter avec un numéro de téléphone");
+                    console.log("  5. Entre ce code: " + fmt);
+                    console.log("\n  ⏳ Expire dans ~60 secondes!\n");
                 } catch (e) {
-                    console.log(`❌ Erreur code: ${e.message}`);
-                    console.log("💡 Supprime session_otech/ et relance.");
+                    pairingDone = false;
+                    console.log("❌ Erreur pairing: " + e.message);
+                    console.log("💡 Supprime la session et relance:");
+                    console.log("   rm -rf session_otech && node index.js");
                 }
             }
         }
