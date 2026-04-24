@@ -2278,17 +2278,7 @@ async function startOTechBot() {
 
     // ── PAIRING CODE ─────────────────────────────────
     if (phoneNumber && !state.creds.registered) {
-        // Attendre que le socket soit en état "connecting"
-        await new Promise(resolve => {
-            const unsub = sock.ev.on("connection.update", ({ connection }) => {
-                if (connection === "connecting") {
-                    unsub?.(); // stop listening
-                    resolve();
-                }
-            });
-            setTimeout(resolve, 3000); // fallback
-        });
-        await wait(1000);
+        await wait(1500);
         try {
             const code = await sock.requestPairingCode(phoneNumber);
             const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -2316,8 +2306,6 @@ async function startOTechBot() {
         if (connection === "connecting") {
             console.log("🔄 Connexion en cours...");
         }
-
-        if (false) {  // placeholder
 
         if (connection === "open") {
             console.log(`\n${NEON} O-TECH BOT v5.0 EST EN LIGNE! ${NEON}`);

@@ -16,5 +16,6 @@
     "node": ">=18.0.0"
   },
   "author": "Orlando Tech — otech.ht",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "module"
 }
