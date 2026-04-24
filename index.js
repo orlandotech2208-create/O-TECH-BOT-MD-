@@ -2264,25 +2264,31 @@ async function startOTechBot() {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
-        printQRInTerminal:            false,
-        logger:                       pino({ level: "silent" }),
-        browser:                      ["O-TECH-BOT", "Chrome", "6.0.0"],
-        connectTimeoutMs:             30_000,
-        keepAliveIntervalMs:          5_000,
-        syncFullHistory:              false,
-        markOnlineOnConnect:          true,
-        fireInitQueries:              false,
-        emitOwnEvents:                true,
+        printQRInTerminal:              false,
+        logger:                         pino({ level: "silent" }),
+        browser:                        ["Ubuntu", "Chrome", "20.0.04"],
+        connectTimeoutMs:               60_000,
+        keepAliveIntervalMs:            10_000,
+        syncFullHistory:                false,
+        markOnlineOnConnect:            true,
         generateHighQualityLinkPreview: false,
-        retryRequestDelayMs:          500,
-        maxMsgRetryCount:             3,
-        msgRetryCounterCache:         new Map(),
+        retryRequestDelayMs:            2000,
         getMessage: async () => ({ conversation: "" }),
     });
 
-    // ── PAIRING CODE — demandé AVANT connection.update ──
+    // ── PAIRING CODE ─────────────────────────────────
     if (phoneNumber && !state.creds.registered) {
-        await wait(500);
+        // Attendre que le socket soit en état "connecting"
+        await new Promise(resolve => {
+            const unsub = sock.ev.on("connection.update", ({ connection }) => {
+                if (connection === "connecting") {
+                    unsub?.(); // stop listening
+                    resolve();
+                }
+            });
+            setTimeout(resolve, 3000); // fallback
+        });
+        await wait(1000);
         try {
             const code = await sock.requestPairingCode(phoneNumber);
             const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -2291,16 +2297,18 @@ async function startOTechBot() {
             console.log("═".repeat(44));
             console.log("\n         >>> " + fmt + " <<<\n");
             console.log("═".repeat(44));
-            console.log("\n  📱 WhatsApp va t'envoyer une notification!");
-            console.log("  Si pas de notif, va manuellement:");
-            console.log("  ⚙️ Paramètres → Appareils connectés");
-            console.log("  → Connecter un appareil");
-            console.log("  → Connecter avec un numéro");
-            console.log("  → Entre: " + fmt);
-            console.log("\n  ⏳ ~60 secondes!\n");
+            console.log("\n  📱 WhatsApp t'envoie une notification!");
+            console.log("  Si pas de notif → manuellement:");
+            console.log("  ⚙️  Paramètres → Appareils connectés");
+            console.log("       → Connecter un appareil");
+            console.log("       → Connecter avec un numéro");
+            console.log("  🔑 Code: " + fmt);
+            console.log("\n  ⏳ 60 secondes avant expiration!\n");
         } catch (e) {
-            console.log("❌ Pairing erreur: " + e.message);
-            console.log("💡 rm -rf session_otech && node index.js");
+            console.log("❌ Erreur pairing: " + e.message);
+            console.log("💡 Supprime la session:");
+            console.log("   rm -rf session_otech && node index.js");
+            process.exit(1);
         }
     }
 
