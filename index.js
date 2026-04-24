@@ -9,7 +9,7 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     downloadContentFromMessage,
     makeCacheableSignalKeyStore,
-} from "baileys";
+} from "@whiskeysockets/baileys";
 import pino from "pino";
 import { createInterface } from "readline";
 import fs from "fs";
@@ -2151,7 +2151,8 @@ async function handleMessage(sock, m) {
     cacheMessage(msg);
     await interceptViewOnce(msg);
 
-    if (msg.key.fromMe && !isOwner(sender)) return;
+    // Ignorer les messages envoyés PAR le bot (pas l'owner)
+    if (msg.key.fromMe && !body.startsWith(CONFIG.prefix)) return;
     // Mode privé: seul l'owner peut utiliser
     if (CONFIG.mode === "private" && !isOwner(sender) && !isSudo(sender)) return;
     // Mode group: seulement en groupe
@@ -2233,15 +2234,16 @@ async function handleMessage(sock, m) {
     const handler = commands[cmd];
 
     if (handler) {
-        // Fire reaction instantly (non-blocking for speed)
+        // Reaction non-bloquante
         const reactEmojis = ["⚡","🤖","🔷","✅","💫","🚀","⚙️","💥","🗡️","🔐"];
         sock.sendMessage(from, { react: { text: rand(reactEmojis), key: msg.key } }).catch(() => {});
-        // Run command immediately
-        handler(sock, from, msg, args, sender).catch(async (err) => {
+        // Exécuter la commande
+        try {
+            await handler(sock, from, msg, args, sender);
+        } catch (err) {
             console.error(`[ERR] .${cmd}:`, err.message);
-            sock.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
-            reply(sock, from, `❌ Erreur cmd: *.${cmd}*`, msg).catch(() => {});
-        });
+            try { await reply(sock, from, `❌ Erreur: *.${cmd}* — ${err.message}`, msg); } catch (_) {}
+        }
     }
 }
 
