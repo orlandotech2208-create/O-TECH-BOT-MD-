@@ -9,8 +9,8 @@
  ╚═════╝          ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝    ╚═════╝  ╚═════╝   ╚═╝   
 ```
 
-# ⚡ O-TECH BOT v6.0 ⚡
-### WhatsApp Bot — Powered by Orlando Tech
+# ⚡ Izatech BOT v6.0 ⚡
+### WhatsApp Bot — Powered by Izatech 
 
 ![Version](https://img.shields.io/badge/Version-6.0.0-blue?style=flat-square)
 ![Node](https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square)
@@ -48,7 +48,7 @@ node index.js
 ## 🔗 Connexion (Pairing Code)
 
 1. Lance `node index.js`
-2. Entre ton numéro sans `+` → ex: `50935443504`
+2. Entre ton numéro sans `+` → ex: `50932589664'
 3. **WhatsApp va envoyer une notification** → clique dessus
 4. OU va manuellement: **Paramètres → Appareils connectés → Connecter un appareil → Connecter avec un numéro**
 5. Entre le code affiché dans Termux
@@ -118,12 +118,12 @@ otech-bot/
 
 ## 👨‍💻 Auteur
 
-**Orlando Tech** — 🇭🇹 Haiti  
-🌐 [otech.ht](https://otech.ht)  
-📱 WhatsApp: [wa.me/50935443504](https://wa.me/50935443504)  
+**izaTech** — 🇭🇹 Haiti  
+🌐 [Izatech.ht](https://izatech.ht)  
+📱 WhatsApp: [wa.me/50932589664](https://wa.me/50932589664)  
 
 ---
 
 <div align="center">
-⚡ <i>Innovation Constante — O-TECH 2026</i> ⚡
+⚡ <i>Innovation Constante — Izatech 2026</i> ⚡
 </div>
