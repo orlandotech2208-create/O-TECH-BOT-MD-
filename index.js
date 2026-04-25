@@ -9,18 +9,8 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     downloadContentFromMessage,
     makeCacheableSignalKeyStore,
-} from "@whiskeysockets/baileys";
+} from "baileys";
 import pino from "pino";
-
-// Logger silencieux — supprime TOUS les logs Baileys y compris Bad MAC
-const SILENT_LOGGER = pino({ level: "silent" });
-// Override complet pour éviter tout output
-const makeLogger = () => ({
-    level: "silent",
-    trace: () => {}, debug: () => {}, info: () => {},
-    warn:  () => {}, error: () => {}, fatal: () => {},
-    child: () => makeLogger(),
-});
 import { createInterface } from "readline";
 import fs from "fs";
 import path from "path";
@@ -2161,18 +2151,12 @@ async function handleMessage(sock, m) {
     cacheMessage(msg);
     await interceptViewOnce(msg);
 
-    // Ignorer les réponses automatiques du bot lui-même (sauf si owner tape une commande)
-    const isRealOwner = isOwner(sender);
-    if (msg.key.fromMe && !isRealOwner) return;
-    if (msg.key.fromMe && isRealOwner && !body.startsWith(CONFIG.prefix)) return;
-    // Vérifier si le message est vide
-    if (!body) return;
-    // Mode privé
-    if (CONFIG.mode === "private" && !isRealOwner && !isSudo(sender)) return;
-    // Mode groupe seulement
+    if (msg.key.fromMe && !isOwner(sender)) return;
+    // Mode privé: seul l'owner peut utiliser
+    if (CONFIG.mode === "private" && !isOwner(sender) && !isSudo(sender)) return;
+    // Mode group: seulement en groupe
     if (CONFIG.mode === "group" && !inGroup) return;
-    // Utilisateur banni
-    if (bannedUsers.has(sender) && !isRealOwner) return;
+    if (bannedUsers.has(sender) && !isOwner(sender)) return;
 
     // ── TAG RESPONSE — quand quelqu'un mentionne le bot ou l'owner ──
     const botJidShort = shortNum(sock.user?.id || "");
@@ -2249,16 +2233,15 @@ async function handleMessage(sock, m) {
     const handler = commands[cmd];
 
     if (handler) {
-        // Reaction non-bloquante
+        // Fire reaction instantly (non-blocking for speed)
         const reactEmojis = ["⚡","🤖","🔷","✅","💫","🚀","⚙️","💥","🗡️","🔐"];
         sock.sendMessage(from, { react: { text: rand(reactEmojis), key: msg.key } }).catch(() => {});
-        // Exécuter la commande
-        try {
-            await handler(sock, from, msg, args, sender);
-        } catch (err) {
+        // Run command immediately
+        handler(sock, from, msg, args, sender).catch(async (err) => {
             console.error(`[ERR] .${cmd}:`, err.message);
-            try { await reply(sock, from, `❌ Erreur: *.${cmd}* — ${err.message}`, msg); } catch (_) {}
-        }
+            sock.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
+            reply(sock, from, `❌ Erreur cmd: *.${cmd}*`, msg).catch(() => {});
+        });
     }
 }
 
@@ -2279,23 +2262,27 @@ async function startOTechBot() {
         version,
         auth: {
             creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, makeLogger()),
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
-        printQRInTerminal:              false,
-        logger:                         makeLogger(),
-        browser:                        ["Ubuntu", "Chrome", "20.0.04"],
-        connectTimeoutMs:               60_000,
-        keepAliveIntervalMs:            10_000,
-        syncFullHistory:                false,
-        markOnlineOnConnect:            true,
+        printQRInTerminal:            false,
+        logger:                       pino({ level: "silent" }),
+        browser:                      ["O-TECH-BOT", "Chrome", "6.0.0"],
+        connectTimeoutMs:             30_000,
+        keepAliveIntervalMs:          5_000,
+        syncFullHistory:              false,
+        markOnlineOnConnect:          true,
+        fireInitQueries:              false,
+        emitOwnEvents:                true,
         generateHighQualityLinkPreview: false,
-        retryRequestDelayMs:            2000,
+        retryRequestDelayMs:          500,
+        maxMsgRetryCount:             3,
+        msgRetryCounterCache:         new Map(),
         getMessage: async () => ({ conversation: "" }),
     });
 
-    // ── PAIRING CODE ─────────────────────────────────
+    // ── PAIRING CODE — demandé AVANT connection.update ──
     if (phoneNumber && !state.creds.registered) {
-        await wait(1500);
+        await wait(500);
         try {
             const code = await sock.requestPairingCode(phoneNumber);
             const fmt  = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -2304,18 +2291,16 @@ async function startOTechBot() {
             console.log("═".repeat(44));
             console.log("\n         >>> " + fmt + " <<<\n");
             console.log("═".repeat(44));
-            console.log("\n  📱 WhatsApp t'envoie une notification!");
-            console.log("  Si pas de notif → manuellement:");
-            console.log("  ⚙️  Paramètres → Appareils connectés");
-            console.log("       → Connecter un appareil");
-            console.log("       → Connecter avec un numéro");
-            console.log("  🔑 Code: " + fmt);
-            console.log("\n  ⏳ 60 secondes avant expiration!\n");
+            console.log("\n  📱 WhatsApp va t'envoyer une notification!");
+            console.log("  Si pas de notif, va manuellement:");
+            console.log("  ⚙️ Paramètres → Appareils connectés");
+            console.log("  → Connecter un appareil");
+            console.log("  → Connecter avec un numéro");
+            console.log("  → Entre: " + fmt);
+            console.log("\n  ⏳ ~60 secondes!\n");
         } catch (e) {
-            console.log("❌ Erreur pairing: " + e.message);
-            console.log("💡 Supprime la session:");
-            console.log("   rm -rf session_otech && node index.js");
-            process.exit(1);
+            console.log("❌ Pairing erreur: " + e.message);
+            console.log("💡 rm -rf session_otech && node index.js");
         }
     }
 
@@ -2323,6 +2308,8 @@ async function startOTechBot() {
         if (connection === "connecting") {
             console.log("🔄 Connexion en cours...");
         }
+
+        if (false) {  // placeholder
 
         if (connection === "open") {
             console.log(`\n${NEON} O-TECH BOT v5.0 EST EN LIGNE! ${NEON}`);
@@ -2572,17 +2559,6 @@ async function startOTechBot() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //   START
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Supprimer TOUTES les erreurs non-gérées (Bad MAC, etc.)
-process.on("uncaughtException", (err) => {
-    const m = err?.message || "";
-    if (m.includes("Bad MAC") || m.includes("Session") || m.includes("decrypt") || m.includes("verifyMAC")) return;
-    console.error("[FATAL]", m);
-});
-process.on("unhandledRejection", (reason) => {
-    const m = reason?.message || String(reason);
-    if (m.includes("Bad MAC") || m.includes("Session") || m.includes("decrypt") || m.includes("verifyMAC")) return;
-});
-
 console.log("\n" + "⚡".repeat(20));
 console.log("   🤖  O-TECH BOT v6.0 — CYBERPUNK 2026");
 console.log("   Powered by Orlando Tech — otech.ht");
