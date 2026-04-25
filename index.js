@@ -11,6 +11,16 @@ import makeWASocket, {
     makeCacheableSignalKeyStore,
 } from "@whiskeysockets/baileys";
 import pino from "pino";
+
+// Logger silencieux — supprime TOUS les logs Baileys y compris Bad MAC
+const SILENT_LOGGER = pino({ level: "silent" });
+// Override complet pour éviter tout output
+const makeLogger = () => ({
+    level: "silent",
+    trace: () => {}, debug: () => {}, info: () => {},
+    warn:  () => {}, error: () => {}, fatal: () => {},
+    child: () => makeLogger(),
+});
 import { createInterface } from "readline";
 import fs from "fs";
 import path from "path";
@@ -2151,13 +2161,18 @@ async function handleMessage(sock, m) {
     cacheMessage(msg);
     await interceptViewOnce(msg);
 
-    // Ignorer les messages envoyés PAR le bot (pas l'owner)
-    if (msg.key.fromMe && !body.startsWith(CONFIG.prefix)) return;
-    // Mode privé: seul l'owner peut utiliser
-    if (CONFIG.mode === "private" && !isOwner(sender) && !isSudo(sender)) return;
-    // Mode group: seulement en groupe
+    // Ignorer les réponses automatiques du bot lui-même (sauf si owner tape une commande)
+    const isRealOwner = isOwner(sender);
+    if (msg.key.fromMe && !isRealOwner) return;
+    if (msg.key.fromMe && isRealOwner && !body.startsWith(CONFIG.prefix)) return;
+    // Vérifier si le message est vide
+    if (!body) return;
+    // Mode privé
+    if (CONFIG.mode === "private" && !isRealOwner && !isSudo(sender)) return;
+    // Mode groupe seulement
     if (CONFIG.mode === "group" && !inGroup) return;
-    if (bannedUsers.has(sender) && !isOwner(sender)) return;
+    // Utilisateur banni
+    if (bannedUsers.has(sender) && !isRealOwner) return;
 
     // ── TAG RESPONSE — quand quelqu'un mentionne le bot ou l'owner ──
     const botJidShort = shortNum(sock.user?.id || "");
@@ -2264,10 +2279,10 @@ async function startOTechBot() {
         version,
         auth: {
             creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
+            keys: makeCacheableSignalKeyStore(state.keys, makeLogger()),
         },
         printQRInTerminal:              false,
-        logger:                         pino({ level: "silent" }),
+        logger:                         makeLogger(),
         browser:                        ["Ubuntu", "Chrome", "20.0.04"],
         connectTimeoutMs:               60_000,
         keepAliveIntervalMs:            10_000,
@@ -2557,6 +2572,17 @@ async function startOTechBot() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //   START
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Supprimer TOUTES les erreurs non-gérées (Bad MAC, etc.)
+process.on("uncaughtException", (err) => {
+    const m = err?.message || "";
+    if (m.includes("Bad MAC") || m.includes("Session") || m.includes("decrypt") || m.includes("verifyMAC")) return;
+    console.error("[FATAL]", m);
+});
+process.on("unhandledRejection", (reason) => {
+    const m = reason?.message || String(reason);
+    if (m.includes("Bad MAC") || m.includes("Session") || m.includes("decrypt") || m.includes("verifyMAC")) return;
+});
+
 console.log("\n" + "⚡".repeat(20));
 console.log("   🤖  O-TECH BOT v6.0 — CYBERPUNK 2026");
 console.log("   Powered by Orlando Tech — otech.ht");
