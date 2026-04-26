@@ -1,21 +1,14 @@
 {
   "name": "otech-bot",
-  "version": "6.0.0",
-  "description": "O-TECH BOT — WhatsApp Bot by Orlando Tech",
+  "version": "2.0.0",
+  "description": "O-TECH BOT - WhatsApp Bot by Mr. OrlandO Tech",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
-    "pino": "^8.21.0",
-    "qrcode-terminal": "^0.12.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "author": "Orlando Tech — otech.ht",
-  "license": "MIT",
-  "type": "module"
+    "@hapi/boom": "^10.0.1",
+    "pino": "^8.21.0"
+  }
 }
