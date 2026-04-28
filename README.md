@@ -1,260 +1,153 @@
-<!-- O-TECH BOT README -->
+# 🤖 O-Tech Bot — WhatsApp Bot par Orlando
 
-<div align="center">
-
-```
- ██████╗       ████████╗███████╗ ██████╗██╗  ██╗
-██╔═══██╗      ╚══██╔══╝██╔════╝██╔════╝██║  ██║
-██║   ██║ ████╗   ██║   █████╗  ██║     ███████║
-██║   ██║      ╝  ██║   ██╔══╝  ██║     ██╔══██║
-╚██████╔╝         ██║   ███████╗╚██████╗██║  ██║
- ╚═════╝          ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝
-```
-
-# ⚡ O-TECH BOT v2.0 ⚡
-
-### WhatsApp Bot — Powered by **Orlando Tech**
-
-![Version](https://img.shields.io/badge/Version-2.0.0-00ff99?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js)
-![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Termux-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-red?style=for-the-badge)
-![Baileys](https://img.shields.io/badge/Baileys-6.7.9-blue?style=for-the-badge)
-
-</div>
+Bot WhatsApp multifonction basé sur Baileys.
 
 ---
 
-## 📱 Installation (Termux)
+## 📋 Prérequis
 
+- Android ou Linux (Termux recommandé)
+- Node.js 18+
+- npm
+
+---
+
+## 📱 Installation sur Termux
+
+### Étape 1 — Installer Termux
+Télécharge **Termux** depuis F-Droid (pas le Play Store) :
+👉 https://f-droid.org/packages/com.termux/
+
+### Étape 2 — Mettre à jour les paquets
 ```bash
-# 1. Mettre à jour les packages
 pkg update && pkg upgrade -y
+```
 
-# 2. Installer Node.js et Git
-pkg install nodejs git -y
+### Étape 3 — Installer Node.js et Git
+```bash
+pkg install nodejs git ffmpeg -y
+```
 
-# 3. Cloner le bot
-git clone https://github.com/orlandotech2208-create/O-TECH-BOT-MD- otech-bot
+### Étape 4 — Transférer le bot
+Copie le dossier `o-tech-bot` dans Termux via :
+- USB : utilise `cp` depuis `/sdcard`
+- ADB : `adb push o-tech-bot /data/data/com.termux/files/home/`
+- Ou directement depuis l'app Fichiers Android
 
-# 4. Entrer dans le dossier
-cd otech-bot
+Exemple si tu as le ZIP dans le stockage interne :
+```bash
+cp /sdcard/Download/o-tech-bot.zip ~/
+cd ~
+unzip o-tech-bot.zip
+cd o-tech-bot
+```
 
-# 5. Installer les dépendances
+### Étape 5 — Installer les dépendances
+```bash
 npm install
-
-# 6. Lancer le bot
-node index.js
 ```
 
+### Étape 6 — Lancer le bot
+```bash
+npm start
+```
+
+### Étape 7 — Connecter WhatsApp
+Le bot te demande ton numéro au format international **sans le +** :
+```
+243XXXXXXXXX
+```
+Ensuite :
+1. Ouvre WhatsApp sur ton téléphone
+2. Va dans **Paramètres > Appareils connectés**
+3. Appuie sur **Connecter un appareil**
+4. Entre le code affiché dans Termux
+
 ---
 
-## 🔗 Connexion (Pairing Code)
-
-1. Lance `node index.js`
-2. Entre ton numéro sans `+` → ex: `50935443504`
-3. **WhatsApp va envoyer une notification** → clique dessus
-4. OU va manuellement: **Paramètres → Appareils connectés → Connecter un appareil → Connecter avec un numéro**
-5. Entre le code affiché dans Termux
-
----
-
-## 🚀 Lancer en arrière-plan (PM2)
+## 🔄 Relancer le bot après fermeture de Termux
 
 ```bash
-# Installer PM2
+cd ~/o-tech-bot
+npm start
+```
+
+### (Optionnel) Garder le bot actif en arrière-plan avec PM2
+
+```bash
 npm install -g pm2
-
-# Démarrer le bot
-pm2 start index.js --name otech-bot
-
-# Voir les logs
-pm2 logs otech-bot
-
-# Redémarrer
-pm2 restart otech-bot
-
-# Sauvegarder pour auto-démarrage
+pm2 start index.js --name o-tech-bot
 pm2 save
+pm2 startup
 ```
 
----
-
-## 🔄 Reset session
-
+Pour voir les logs :
 ```bash
-rm -rf session_otech && node index.js
+pm2 logs o-tech-bot
+```
+
+Pour arrêter :
+```bash
+pm2 stop o-tech-bot
 ```
 
 ---
 
-## 📋 Toutes les Commandes
+## 🗂️ Structure du projet
 
-> **Préfixe:** `.`
-
----
-
-### ℹ️ Commandes Info
-
-| Commande | Description |
-|----------|-------------|
-| `.menu` | Afficher le menu complet |
-| `.help` | Alias de .menu |
-| `.ping` | Vérifier si le bot est actif + latence |
-| `.owner` | Infos sur le propriétaire du bot |
-| `.info` | Informations du groupe actuel |
-
----
-
-### 🛡️ Modération
-
-| Commande | Description | Requis |
-|----------|-------------|--------|
-| `.kick @user` | Kicker un membre du groupe | Admin |
-| `.add numéro` | Ajouter un membre (ex: `.add 50912345678`) | Admin |
-| `.promote @user` | Promouvoir un membre en admin | Admin |
-| `.demote @user` | Rétrograder un admin | Admin |
-| `.mute @user` | Empêcher un membre d'utiliser le bot | Admin |
-| `.unmute @user` | Rétablir les droits d'un membre | Admin |
-| `.warn @user` | Avertir un membre (3 warns = kick auto) | Admin |
-| `.clearwarn @user` | Effacer les avertissements | Admin |
-| `.warns @user` | Voir le nombre d'avertissements | Admin |
-| `.delete` | Supprimer un message (reply) | Admin |
-
----
-
-### 👥 Gestion du Groupe
-
-| Commande | Description | Requis |
-|----------|-------------|--------|
-| `.open` | Ouvrir le groupe (tout le monde peut écrire) | Admin |
-| `.close` | Fermer le groupe (admins seulement) | Admin |
-| `.groupname nom` | Changer le nom du groupe | Admin |
-| `.groupdesc description` | Changer la description | Admin |
-| `.tag texte @user` | Mentionner des membres avec message | Admin |
-| `.tagall texte` | Mentionner TOUS les membres | Admin |
-
----
-
-### 🔒 Sécurité Automatique
-
-| Commande | Description | Requis |
-|----------|-------------|--------|
-| `.antilink on/off` | Bloquer les liens dans le groupe | Admin |
-| `.antispam on/off` | Bloquer le spam (>5 msgs en 5s) | Admin |
-| `.antibadword on/off` | Bloquer les grossièretés | Admin |
-
----
-
-### ⚡ Commandes Bulk (Owner uniquement)
-
-| Commande | Description |
-|----------|-------------|
-| `.kickall` | Kicker tous les membres non-admins |
-| `.kickall2` | Kicker absolument tout le monde (admins inclus) |
-| `.promoteall` | Promouvoir tous les membres en admin |
-| `.demoteall` | Rétrograder tous les admins |
-| `.broadcast message` | Envoyer un message à tous les groupes |
-| `.listgroups` | Lister tous les groupes du bot |
-| `.contacts` | Exporter tous les numéros du groupe |
-
----
-
-### 🎮 Jeux & Divertissement
-
-| Commande | Description |
-|----------|-------------|
-| `.quiz` | Lancer un quiz (30 secondes pour répondre) |
-| `.devinette` | Poser une devinette |
-| `.wordchain` | Démarrer/arrêter le jeu de chaîne de mots |
-| `.duel @user` | Défier un membre en duel (l'adversaire doit répondre "oui") |
-| `.leaderboard` / `.lb` | Afficher le classement des points |
-
----
-
-### 🤖 Menus Futurs
-
-| Commande | Description |
-|----------|-------------|
-| `.ai` / `.ia` | Menu Intelligence Artificielle *(prochainement)* |
-| `.music` / `.musique` | Menu Téléchargement Musique *(prochainement)* |
-
----
-
-## ✨ Fonctionnalités Automatiques
-
-- 🎉 **Message de bienvenue** automatique avec nom, numéro et compteur de membres
-- 👋 **Message d'au revoir** pour les membres qui quittent
-- 🛡️ **Protection anti-kick owner** — le bot alerte avec humour si quelqu'un tente de kicker l'owner
-- 😄 **Réaction emoji** automatique sur les messages (aléatoire)
-- ⚠️ **Système de warns** avec kick automatique à 3 avertissements
-- 💾 **Persistance des données** — warns, mutes et settings sauvegardés sur disque
+```
+o-tech-bot/
+├── index.js          ← Point d'entrée principal
+├── config.js         ← Gestionnaire de configuration
+├── package.json      ← Dépendances npm
+├── config.json       ← Créé automatiquement au 1er lancement
+├── sessionData/      ← Session WhatsApp (créé automatiquement)
+├── media/
+│   ├── menu.jpg      ← Image affichée avec !menu
+│   ├── welcome.jpg   ← Image affichée quand quelqu'un rejoint
+│   └── notfound.jpg  ← Image pour commande inconnue
+└── commands/         ← Toutes les commandes du bot
+    ├── menu.js
+    ├── ping.js
+    ├── ai.js
+    └── ...
+```
 
 ---
 
 ## ⚙️ Configuration
 
-```js
-// Dans index.js, modifie ces valeurs:
-const config = {
-  ownerName:   '𝐌𝐫. 𝐎𝐫𝐥𝐚𝐧𝐝𝐎 Tech',
-  ownerNumber: ['50935443504'],     // Ton numéro sans +
-  botName:     'O-TECH BOT',
-  prefix:      '.',                  // Préfixe des commandes
-  maxWarns:    3,                    // Warnings avant kick auto
-};
-```
+Edite `config.json` après le premier démarrage pour changer :
+- `ownerNumber` : ton numéro sans + (ex: `243833389567`)
+- `ownerJid` : même numéro avec `@s.whatsapp.net`
+- `prefix` : le préfixe des commandes (par défaut `!`)
+- `mode` : `"public"` ou `"private"`
 
 ---
 
-## 🏗️ Structure du projet
+## 📜 Commandes principales
 
-```
-otech-bot/
-├── index.js          # Fichier principal du bot
-├── package.json      # Dépendances Node.js
-├── session_otech/    # Session WhatsApp (auto-générée)
-└── data/
-    ├── warns.json    # Avertissements des membres
-    ├── mutes.json    # Membres mutés
-    ├── settings.json # Paramètres des groupes
-    └── leaderboard.json # Classement des jeux
-```
-
----
-
-## 📦 Dépendances
-
-| Package | Version | Rôle |
-|---------|---------|------|
-| `@whiskeysockets/baileys` | ^6.7.9 | Bibliothèque WhatsApp |
-| `@hapi/boom` | ^10.0.1 | Gestion des erreurs |
-| `pino` | ^8.21.0 | Logger silencieux |
+| Commande | Description |
+|---|---|
+| `!menu` | Affiche le menu complet |
+| `!ping` | Teste la latence |
+| `!ai [question]` | Pose une question à l'IA |
+| `!sticker` | Crée un sticker depuis une image/vidéo |
+| `!url` | Génère un lien Catbox pour un média |
+| `!vv` | Dévoile un média vue unique |
+| `!welcome on/off` | Active le message de bienvenue en groupe |
+| `!antilink on/off` | Active l'anti-lien en groupe |
+| `!kick @user` | Expulse un membre (admin) |
+| `!promote @user` | Nomme un admin (admin) |
+| `!mode public/privé` | Change le mode du bot (owner) |
+| `!restart` | Redémarre le bot (owner) |
 
 ---
 
-## 👑 Auteur
+## ⚠️ Remarque importante
 
-<div align="center">
-
-**𝐌𝐫. 𝐎𝐫𝐥𝐚𝐧𝐝𝐎 Tech**
-
-[![WhatsApp](https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://wa.me/50935443504)
-[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:orlandotech2208@gmail.com)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orlandotech2208-create)
-
-**🌐 O-TECH Brand | Haiti 🇭🇹**
-
-*Digital Agency • Online Shop • Academy • Bots & Apps*
-
-</div>
+Ne partage jamais le dossier `sessionData/` — il contient ta session WhatsApp.
 
 ---
 
-<div align="center">
-
-⭐ **Donne une étoile si le bot t'a aidé!** ⭐
-
-*O-TECH BOT © 2025 — Tous droits réservés*
-
-</div>
+**o-tech bot** — Créé par **Orlando** 🤖
