@@ -10,16 +10,16 @@ class ConfigManager {
     load() {
         if (!fs.existsSync(this.configPath)) {
             this.config = {
-                ownerNumber: '243833389567',
-                ownerJid: '243833389567@s.whatsapp.net',
+                ownerNumber: '50935443504',
+                ownerJid: '50935443504@s.whatsapp.net',
                 botName: 'o-tech bot',
                 botAuthor: 'Orlando',
-                prefix: '!',
+                prefix: '『 ᏦᎽᎾᎿᎯᏦᎯ_𝐇𝐀𝐂𝐊𝐄𝐑_𝐕𝟐 』',
                 sessionDir: 'sessionData',
                 mode: 'public',
                 antiSpam: true,
                 cooldown: 3,
-                timezone: 'Africa/Kinshasa',
+                timezone: 'America/Port-au-Prince',
                 mongodbUri: '',
                 logLevel: 'info',
                 statusForward: true
