@@ -32,7 +32,7 @@ async function getUserNumber() {
     console.log(chalk.hex('#00BFFF')('│     CONNEXION REQUISE    │'));
     console.log(chalk.hex('#00BFFF')('└──────────────────────────┘\n'));
     return new Promise((resolve) => {
-        rl.question(chalk.cyan('📱 Numéro (ex: 243XXXXXXXX): '), (num) => {
+        rl.question(chalk.cyan('📱 Numéro (ex: 509XXXXXXXX): '), (num) => {
             rl.close();
             console.log(chalk.green(`\n✓ Numéro enregistré: ${num}\n`));
             resolve(num.trim());
